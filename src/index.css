@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+@import 'momi-ui/tailwind.css'; /* tokens + @source cho class của momi-ui */
+
+/* Màu thương hiệu Ticket2h. Đặt trên :root/.dark để menu, toast (vẽ qua portal) cũng nhận. */
+:root {
+  --primary: oklch(0.585 0.233 277.117);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.585 0.233 277.117);
+  --radius: 0.75rem;
+}
+
+.dark {
+  --primary: oklch(0.673 0.182 276.935);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.673 0.182 276.935);
+}

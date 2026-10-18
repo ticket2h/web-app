@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Ticket2h: mua vé sự kiện, nhận vé QR" />
+    <title>Ticket2h</title>
+    <!-- Áp theme đã lưu trước khi React chạy, để chế độ tối không nháy nền sáng. Cùng storageKey với ThemeProvider. -->
+    <script>
+      try {
+        var t = localStorage.getItem('momi-theme') || 'system'
+        var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
