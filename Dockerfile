@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-# Image của web: SPA đã build + nginx làm gateway (nginx/default.conf.template).
-# Build: docker build -t ghcr.io/ticket2h/web . (chỉ cần Docker). CI (.github/workflows/ci.yml) build và đẩy lên GHCR.
+# Image của web-app: SPA đã build + nginx làm gateway (nginx/default.conf.template).
+# Build: docker build -t ghcr.io/ticket2h/web-app . (chỉ cần Docker). CI (.github/workflows/ci.yml) build và đẩy lên GHCR.
 
 # Bước 1: build SPA. Image node đầy đủ (không phải slim/alpine) vì momi-ui cài từ git cần lệnh git.
 FROM node:24-bookworm AS build

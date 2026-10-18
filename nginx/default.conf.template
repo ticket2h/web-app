@@ -1,4 +1,4 @@
-# Gateway của Ticket2h trong image web: phục vụ SPA và chuyển /api/** tới các service, để trình duyệt chỉ gọi một
+# Gateway của Ticket2h trong image web-app: phục vụ SPA và chuyển /api/** tới các service, để trình duyệt chỉ gọi một
 # origin (không cần CORS, cookie refresh token dùng SameSite=Strict được). Proxy dev của Vite (vite.config.ts) làm y hệt.
 # ${IDENTITY_UPSTREAM}, ${CORE_UPSTREAM} được image nginx thay bằng biến môi trường lúc khởi động (envsubst).
 

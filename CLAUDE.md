@@ -1,7 +1,7 @@
-# Ticket2h web
+# Ticket2h web-app
 
 SPA React 19 + Vite + TypeScript cho Ticket2h, giao diện bằng momi-ui. Một trong các repo của hệ thống (cạnh
-`../infra`, `../core-service`, `../identity-service`); kiến trúc và quyết định: `../infra/docs/` (ADR-015 cho web).
+`../infra`, `../core-service`, `../identity-service`); kiến trúc và quyết định: `../infra/docs/` (ADR-015 cho web-app).
 
 ## Lệnh
 - Dev: `npm run dev` (cần identity :8082 và core :8080 chạy profile dev)

@@ -1,6 +1,6 @@
-# Ticket2h web
+# Ticket2h web-app
 
-Giao diện web của Ticket2h: SPA **React 19 + Vite + TypeScript**, thư viện giao diện
+App web của Ticket2h (mua vé, vé của tôi; sau này: ban tổ chức, soát vé): SPA **React 19 + Vite + TypeScript**, thư viện giao diện
 [momi-ui](https://github.com/HoangDuong2k/momi-ui) (Tailwind CSS v4 + Radix), TanStack Query, React Router,
 react-hook-form + zod. Kiểu dữ liệu API sinh từ OpenAPI của các service. Quyết định thiết kế:
 [infra ADR-015](https://github.com/ticket2h/infra/blob/main/docs/adr/015-web-gateway-refresh-token.md).
@@ -64,11 +64,11 @@ Khi dev, gateway là proxy của Vite (`vite.config.ts`). Trong image, gateway l
 ## Docker
 
 ```bash
-docker build -t ghcr.io/ticket2h/web .
-docker run -p 3000:80 -e IDENTITY_UPSTREAM=http://host.docker.internal:8082 -e CORE_UPSTREAM=http://host.docker.internal:8080 ghcr.io/ticket2h/web
+docker build -t ghcr.io/ticket2h/web-app .
+docker run -p 3000:80 -e IDENTITY_UPSTREAM=http://host.docker.internal:8082 -e CORE_UPSTREAM=http://host.docker.internal:8080 ghcr.io/ticket2h/web-app
 ```
 
-Trong `infra`: `docker compose --profile apps up -d` chạy cả web ở http://localhost:3000. CI build image mỗi lần push
+Trong `infra`: `docker compose --profile apps up -d` chạy cả web-app ở http://localhost:3000. CI build image mỗi lần push
 lên `main` (giống các repo service).
 
 ## Cấu trúc
