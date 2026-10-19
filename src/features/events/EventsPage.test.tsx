@@ -25,7 +25,7 @@ describe('EventsPage', () => {
     })
     renderApp('/')
 
-    expect(await screen.findByText('Sơn Tùng M-TP Live Concert 2026')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Sơn Tùng M-TP Live Concert 2026' })).toBeInTheDocument()
     expect(screen.getByText('1 sự kiện')).toBeInTheDocument()
     expect(screen.getByText('Đang mở bán')).toBeInTheDocument()
     expect(screen.getByText(/Sân vận động Mỹ Đình · Hà Nội/)).toBeInTheDocument()
@@ -46,7 +46,7 @@ describe('EventsPage', () => {
 
     await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm sự kiện' }), 'son tung')
 
-    expect(await screen.findByText('Sơn Tùng M-TP Live Concert 2026')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Sơn Tùng M-TP Live Concert 2026' })).toBeInTheDocument()
     expect(router.state.location.search).toBe('?q=son+tung')
     // Một lần lúc mở trang, một lần sau khi gõ xong: không gọi API mỗi phím
     expect(queries).toEqual([null, 'son tung'])
@@ -66,6 +66,6 @@ describe('EventsPage', () => {
 
     expect(await screen.findByText('Tham số không hợp lệ')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
-    await waitFor(() => expect(screen.getByText('Đen Vâu Show')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Đen Vâu Show' })).toBeInTheDocument())
   })
 })

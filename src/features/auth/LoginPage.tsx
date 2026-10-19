@@ -13,7 +13,7 @@ import {
   Text,
 } from 'momi-ui'
 import { useForm } from 'react-hook-form'
-import { useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
 
 import { ApiError, errorMessage } from '../../shared/api/problem'
@@ -45,7 +45,7 @@ export function LoginPage() {
     <Container size="sm" className="py-12">
       <Card className="mx-auto max-w-md" padding="lg">
         <CardHeader>
-          <CardTitle>Đăng nhập</CardTitle>
+          <CardTitle className="font-display text-2xl">Đăng nhập</CardTitle>
           <CardDescription>Đăng nhập để mua vé và xem vé của bạn.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -65,6 +65,15 @@ export function LoginPage() {
               Đăng nhập
             </Button>
           </form>
+          <Text size="sm" tone="muted" align="center" className="mt-6">
+            Chưa có tài khoản?{' '}
+            <Link
+              to={`/register${params.get('next') ? `?next=${encodeURIComponent(params.get('next')!)}` : ''}`}
+              className="font-medium text-primary hover:underline"
+            >
+              Đăng ký
+            </Link>
+          </Text>
           {import.meta.env.DEV && (
             <Text size="sm" tone="muted" className="mt-6">
               Tài khoản mẫu (profile dev): buyer1@test.local, organizer1@test.local, staff1@test.local,

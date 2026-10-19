@@ -21,15 +21,4 @@ export function saleStatus(
   return { kind: 'closed' }
 }
 
-/** Giờ hiển thị theo múi giờ của sự kiện (không theo máy người xem): khán giả cần giờ tại nơi diễn. */
-export function formatEventTime(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('vi-VN', {
-    timeZone,
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(iso))
-}
+export { formatEventTime } from '../../shared/format/time'

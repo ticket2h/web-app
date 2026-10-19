@@ -39,25 +39,33 @@ export function EventsPage() {
   }
 
   return (
-    <Container size="xl" className="py-10">
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <Heading as="h1">Sự kiện</Heading>
-          <Text tone="muted" className="mt-1">
-            Tìm concert, show diễn và mua vé ngay.
+    <>
+      <section className="relative isolate overflow-hidden border-b">
+        <div className="poster-dots absolute inset-0 -z-10 text-foreground/[0.07]" aria-hidden />
+        <Container size="xl" className="py-14 md:py-20">
+          <Text size="xs" weight="semibold" className="uppercase tracking-[0.22em] text-primary">
+            Concert · Show diễn · Lễ hội
           </Text>
-        </div>
-        <Input
-          type="search"
-          aria-label="Tìm sự kiện"
-          placeholder="Tìm theo tên, địa điểm, thành phố…"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          leftSection={<Search className="size-4" aria-hidden />}
-          wrapperClassName="md:w-96"
-        />
-      </div>
+          <Heading as="h1" weight="bold" className="mt-4 max-w-3xl text-5xl leading-[0.95] md:text-7xl">
+            Đêm nay đi đâu?
+          </Heading>
+          <Text size="lg" tone="muted" className="mt-5 max-w-xl">
+            Chọn ghế, thanh toán, nhận vé QR qua email trong vài phút.
+          </Text>
+          <Input
+            type="search"
+            size="lg"
+            aria-label="Tìm sự kiện"
+            placeholder="Tìm theo tên, địa điểm, thành phố… (gõ không dấu cũng được)"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            leftSection={<Search className="size-4" aria-hidden />}
+            wrapperClassName="mt-8 max-w-xl bg-card shadow-sm"
+          />
+        </Container>
+      </section>
 
+      <Container size="xl" className="py-10">
       {events.isPending && <EventGridSkeleton />}
 
       {events.isError && (
@@ -90,10 +98,10 @@ export function EventsPage() {
 
       {events.data && events.data.items.length > 0 && (
         <>
-          <Text size="sm" tone="muted" className="mb-4">
+          <Text size="sm" tone="muted" className="mb-6">
             {events.data.total} sự kiện
           </Text>
-          <Grid columns={{ base: 1, sm: 2, lg: 3 }} gap={4} aria-busy={events.isFetching}>
+          <Grid columns={{ base: 1, sm: 2, lg: 3 }} gap={8} aria-busy={events.isFetching}>
             {events.data.items.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -108,15 +116,16 @@ export function EventsPage() {
           )}
         </>
       )}
-    </Container>
+      </Container>
+    </>
   )
 }
 
 function EventGridSkeleton() {
   return (
-    <Grid columns={{ base: 1, sm: 2, lg: 3 }} gap={4} aria-label="Đang tải">
+    <Grid columns={{ base: 1, sm: 2, lg: 3 }} gap={8} aria-label="Đang tải">
       {Array.from({ length: 6 }, (_, i) => (
-        <Skeleton key={i} className="h-40 rounded-xl" />
+        <Skeleton key={i} className="aspect-[4/3] rounded-2xl" />
       ))}
     </Grid>
   )

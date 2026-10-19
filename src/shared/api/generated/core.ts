@@ -104,7 +104,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["staff"];
         put?: never;
         post: operations["assignStaff"];
         delete?: never;
@@ -932,6 +932,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TicketTypeResponse"];
+                };
+            };
+        };
+    };
+    staff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffResponse"][];
                 };
             };
         };

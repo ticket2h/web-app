@@ -88,7 +88,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["users"];
         put?: never;
         post: operations["createUser"];
         delete?: never;
@@ -104,7 +104,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["organizers"];
         put?: never;
         post: operations["createOrganizer"];
         delete?: never;
@@ -212,6 +212,15 @@ export interface components {
             /** Format: uuid */
             id?: string;
             name?: string;
+        };
+        UserPageResponse: {
+            items?: components["schemas"]["UserResponse"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            total?: number;
         };
     };
     responses: never;
@@ -336,6 +345,31 @@ export interface operations {
             };
         };
     };
+    users: {
+        parameters: {
+            query?: {
+                role?: "CUSTOMER" | "ORGANIZER" | "STAFF" | "ADMIN";
+                q?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPageResponse"];
+                };
+            };
+        };
+    };
     createUser: {
         parameters: {
             query?: never;
@@ -356,6 +390,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    organizers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizerResponse"][];
                 };
             };
         };

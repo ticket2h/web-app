@@ -1,4 +1,4 @@
-import { LogOut, Moon, Sun, Ticket, UserRound } from 'lucide-react'
+import { LogOut, Moon, ReceiptText, Sun, Ticket, UserRound } from 'lucide-react'
 import {
   Badge,
   Button,
@@ -10,11 +10,10 @@ import {
   DropdownMenuTrigger,
   IconButton,
   Navbar,
-  Text,
   useTheme,
 } from 'momi-ui'
 import type { MouseEvent } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router'
+import { Link, Outlet, useLocation, useNavigate, useNavigation } from 'react-router'
 
 import type { Role } from '../shared/api/types'
 import { logout } from '../shared/auth/session'
@@ -30,30 +29,57 @@ const ROLE_LABELS: Record<Role, string> = {
 export function RootLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const navigation = useNavigation()
+  const session = useSession()
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <Navbar
         brand={
-          <Link to="/" className="flex items-center gap-2 font-semibold">
-            <Ticket className="size-5 text-primary" aria-hidden />
+          <Link to="/" className="flex items-center gap-2 font-display text-lg font-extrabold tracking-tight">
+            <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
+              <Ticket className="size-4" aria-hidden />
+            </span>
             Ticket2h
           </Link>
         }
-        links={[{ label: 'Sự kiện', href: '/', active: location.pathname === '/' }]}
+        links={navLinks(session?.user.role ?? null, location.pathname)}
         actions={<NavbarActions />}
         onClickCapture={(event) => navigateInApp(event, navigate)}
+      />
+      {/* Đang tải code của trang kế tiếp (route lazy) */}
+      <div
+        aria-hidden
+        className={`fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-primary transition-transform duration-500 ${
+          navigation.state === 'loading' ? 'scale-x-75' : 'scale-x-0'
+        }`}
       />
       <main className="flex-1">
         <Outlet />
       </main>
-      <footer className="border-t py-6">
-        <Text size="sm" tone="muted" align="center">
-          Ticket2h · dự án học tập
-        </Text>
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <span className="font-display font-bold text-foreground">Ticket2h</span>
+          <span>Dự án học tập: microservice Spring Boot, thanh toán qua cổng giả lập MockPay.</span>
+        </div>
       </footer>
     </div>
   )
+}
+
+/** Mục điều hướng theo vai trò. Trang chỉ ẩn/hiện link; quyền thật do BE kiểm tra. */
+function navLinks(role: Role | null, pathname: string) {
+  const links = [{ label: 'Sự kiện', href: '/', active: pathname === '/' || pathname.startsWith('/events/') }]
+  const add = (label: string, href: string, prefixes: string[] = [href]) =>
+    links.push({ label, href, active: prefixes.some((p) => pathname.startsWith(p)) })
+  if (role === 'CUSTOMER') {
+    add('Vé của tôi', '/me/tickets')
+    add('Đơn hàng', '/me/orders', ['/me/orders', '/orders/'])
+  }
+  if (role === 'ORGANIZER') add('Ban tổ chức', '/organizer')
+  if (role === 'STAFF') add('Soát vé', '/checkin')
+  if (role === 'ADMIN') add('Quản trị', '/admin')
+  return links
 }
 
 /**
@@ -90,7 +116,7 @@ function NavbarActions() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" leftIcon={<UserRound className="size-4" aria-hidden />}>
-              {session.user.fullName}
+              <span className="max-w-40 truncate">{session.user.fullName}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-56">
@@ -104,6 +130,16 @@ function NavbarActions() {
             <DropdownMenuItem onSelect={() => navigate('/account')}>
               <UserRound className="size-4" aria-hidden /> Tài khoản
             </DropdownMenuItem>
+            {session.user.role === 'CUSTOMER' && (
+              <>
+                <DropdownMenuItem onSelect={() => navigate('/me/tickets')}>
+                  <Ticket className="size-4" aria-hidden /> Vé của tôi
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => navigate('/me/orders')}>
+                  <ReceiptText className="size-4" aria-hidden /> Đơn hàng
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuItem
               variant="danger"
               onSelect={async () => {

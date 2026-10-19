@@ -20,7 +20,12 @@ SPA React 19 + Vite + TypeScript cho Ticket2h, giao diện bằng momi-ui. Một
 - Access token chỉ ở trong bộ nhớ (`session.ts`). Không lưu token vào `localStorage`/`sessionStorage`, không log token.
 - Trạng thái lọc, tìm kiếm, phân trang để trên URL (`useSearchParams`).
 - Code mới theo feature: `src/features/<tên>/` (trang, hook gọi API, hàm thuần + test cạnh nhau).
-- Test: hàm thuần test thẳng; trang test qua `renderApp(path)` + `mockApi({...})` (`src/test/render.tsx`).
+- Test: hàm thuần test thẳng; trang test qua `renderApp(path)` + `mockApi({...})` (`src/test/render.tsx`), đăng nhập sẵn
+  bằng `signIn(role)` (`src/test/session.ts`).
+- Trang theo vai trò bọc trong route `RequireRole` (`app/router.tsx`); chỉ là giao diện, BE vẫn kiểm tra quyền.
+- Tiền hiển thị bằng `formatVnd`; giờ ban tổ chức nhập theo múi giờ sự kiện (`shared/format/zoned.ts`).
+- Đặt vé: một `Idempotency-Key` cho mỗi lựa chọn (`selectionKey`), dùng lại khi bấm lại cùng lựa chọn.
+- Chuyển trang ra ngoài app (MockPay) qua `goToExternal` (`shared/navigation.ts`) để test thay được.
 
 ## Cấm
 - Không thêm dependency mới nếu chưa hỏi.
