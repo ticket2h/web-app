@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { identityApi } from '../../shared/api/client'
 import { unwrap } from '../../shared/api/problem'
@@ -23,23 +23,29 @@ export function useCreateOrganizer() {
   })
 }
 
-export function useUsers(filter: { role: Role | null; q: string; page: number }) {
-  return useQuery({
+/**
+ * Tài khoản, mới tạo trước, phân trang keyset (2 triệu tài khoản: OFFSET ở trang sâu rất chậm, ADR-018 ở
+ * core-service). Mỗi lần "Xem thêm" gửi `nextCursor` của trang trước; không có tổng số tài khoản.
+ */
+export function useUsers(filter: { role: Role | null; q: string }) {
+  return useInfiniteQuery({
     queryKey: ['admin', 'users', filter],
-    queryFn: async ({ signal }) =>
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await identityApi.GET('/admin/users', {
           params: {
             query: {
               role: filter.role ?? undefined,
               q: filter.q || undefined,
-              page: filter.page,
-              size: USERS_PAGE_SIZE,
+              cursor: pageParam ?? undefined,
+              limit: USERS_PAGE_SIZE,
             },
           },
           signal,
         }),
       ) as UserPage,
+    getNextPageParam: (page) => page.nextCursor,
     placeholderData: keepPreviousData,
   })
 }

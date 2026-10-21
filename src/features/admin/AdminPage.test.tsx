@@ -18,9 +18,8 @@ describe('AdminPage', () => {
         queries.push(new URL(request.url).search)
         return json({
           items: [{ id: 'u1', email: 'staff1@test.local', fullName: 'Nhân viên 1', role: 'STAFF', organizerId: null }],
-          page: 0,
-          size: 20,
-          total: 1,
+          limit: 20,
+          nextCursor: null,
         })
       },
       'POST /api/identity/admin/users': async (request) => {
@@ -31,7 +30,9 @@ describe('AdminPage', () => {
     renderApp('/admin?role=STAFF&q=staff')
 
     expect(await screen.findByText('staff1@test.local')).toBeInTheDocument()
-    expect(queries[0]).toBe('?role=STAFF&q=staff&page=0&size=20')
+    expect(queries[0]).toBe('?role=STAFF&q=staff&limit=20')
+    expect(screen.getByText('Đang xem 1 tài khoản, đã hết danh sách')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xem thêm' })).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
     const dialog = await screen.findByRole('dialog')
@@ -55,5 +56,32 @@ describe('AdminPage', () => {
         organizerId: sky.id,
       }),
     )
+  })
+
+  it('loads the next page with the cursor of the previous one', async () => {
+    signIn('ADMIN')
+    const cursors: (string | null)[] = []
+    const user = (n: number) => ({ id: `u${n}`, email: `u${n}@test.local`, fullName: `Khách ${n}`, role: 'CUSTOMER', organizerId: null })
+    mockApi({
+      'GET /api/identity/admin/organizers': () => json([]),
+      'GET /api/identity/admin/users': (request) => {
+        const cursor = new URL(request.url).searchParams.get('cursor')
+        cursors.push(cursor)
+        return cursor === null
+          ? json({ items: [user(1), user(2)], limit: 20, nextCursor: 'trang-2' })
+          : json({ items: [user(3)], limit: 20, nextCursor: null })
+      },
+    })
+    renderApp('/admin')
+
+    expect(await screen.findByText('u2@test.local')).toBeInTheDocument()
+    expect(screen.getByText('Đang xem 2 tài khoản')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Xem thêm' }))
+
+    expect(await screen.findByText('u3@test.local')).toBeInTheDocument()
+    expect(screen.getByText('u1@test.local')).toBeInTheDocument()
+    expect(cursors).toEqual([null, 'trang-2'])
+    expect(screen.getByText('Đang xem 3 tài khoản, đã hết danh sách')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Xem thêm' })).not.toBeInTheDocument()
   })
 })

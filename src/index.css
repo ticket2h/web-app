@@ -19,6 +19,9 @@
   --color-poster-ultramarine: oklch(0.44 0.17 266);
   --color-poster-lilac: oklch(0.8 0.09 330);
   --color-poster-paper: oklch(0.97 0.012 85);
+
+  /* Cột/thanh của biểu đồ (báo cáo doanh thu): một chuỗi số liệu, một màu. Giá trị ở :root/.dark bên dưới */
+  --color-chart: var(--chart);
 }
 
 :root {
@@ -44,6 +47,9 @@
   --input: oklch(0.85 0.016 80);
   /* Viền focus màu mực, không dùng màu son: màu son dễ nhầm với viền báo lỗi */
   --ring: oklch(0.42 0.03 60);
+
+  /* Đã kiểm tra bằng validator của dataviz: đủ tương phản (>= 3:1) với nền card, trong dải độ sáng của chế độ sáng */
+  --chart: oklch(0.6 0.2 33);
 }
 
 .dark {
@@ -66,6 +72,9 @@
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 14%);
   --ring: oklch(0.82 0.02 80);
+
+  /* Tối hơn màu primary của chế độ tối một bậc (L 0.66): nằm trong dải độ sáng cho nền tối, vẫn >= 3:1 */
+  --chart: oklch(0.66 0.17 36);
 }
 
 @layer base {

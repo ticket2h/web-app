@@ -1,4 +1,4 @@
-import { ArrowLeft, Armchair, CircleCheck, CircleX, ExternalLink, Plus, Rocket, Ticket } from 'lucide-react'
+import { ArrowLeft, Armchair, CircleCheck, CircleX, ExternalLink, FileUp, Plus, Rocket, Ticket } from 'lucide-react'
 import {
   Alert,
   AlertDialog,
@@ -39,12 +39,17 @@ import { SeatMap } from '../events/SeatMap'
 import { useOrganizerEvent, usePublishEvent, useUpdateEvent, useVenues } from './api'
 import { EventForm } from './EventForm'
 import { formDefaults } from './eventForm'
+import { ExportMenu } from './ExportMenu'
+import { OrdersPanel } from './OrdersPanel'
+import { SalesPanel } from './SalesPanel'
+import { SeatImportDialog } from './SeatImportDialog'
 import { SeatsDialog } from './SeatsDialog'
 import { publishChecklist } from './seating'
 import { StaffPanel } from './StaffPanel'
 import { TicketTypeDialog } from './TicketTypeDialog'
 
-type Tab = 'tickets' | 'staff' | 'details'
+const TABS = ['tickets', 'sales', 'orders', 'staff', 'details'] as const
+type Tab = (typeof TABS)[number]
 
 export function OrganizerEventPage() {
   const { eventId } = useParams()
@@ -70,7 +75,7 @@ export function OrganizerEventPage() {
 function EventManager({ detail }: { detail: OrganizerEventDetail }) {
   const { event } = detail
   const [params, setParams] = useSearchParams()
-  const tab = (['tickets', 'staff', 'details'] as const).find((t) => t === params.get('tab')) ?? 'tickets'
+  const tab = TABS.find((t) => t === params.get('tab')) ?? 'tickets'
   const draft = event.status === 'DRAFT'
 
   return (
@@ -88,20 +93,31 @@ function EventManager({ detail }: { detail: OrganizerEventDetail }) {
           draft ? (
             <PublishButton detail={detail} />
           ) : (
-            <Button asChild variant="outline" rightIcon={<ExternalLink className="size-4" />}>
-              <Link to={`/events/${event.id}`}>Xem trang bán vé</Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <ExportMenu event={event} />
+              <Button asChild variant="outline" rightIcon={<ExternalLink className="size-4" />}>
+                <Link to={`/events/${event.id}`}>Xem trang bán vé</Link>
+              </Button>
+            </div>
           )
         }
       />
       <Tabs value={tab} onValueChange={(value) => setParams(value === 'tickets' ? {} : { tab: value as Tab })}>
-        <TabsList>
+        <TabsList className="max-w-full overflow-x-auto">
           <TabsTrigger value="tickets">Vé và ghế</TabsTrigger>
+          <TabsTrigger value="sales">Doanh thu</TabsTrigger>
+          <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
           <TabsTrigger value="staff">Nhân viên soát vé</TabsTrigger>
           <TabsTrigger value="details">Thông tin</TabsTrigger>
         </TabsList>
         <TabsContent value="tickets" className="pt-6">
           <TicketsTab detail={detail} />
+        </TabsContent>
+        <TabsContent value="sales" className="pt-6">
+          <SalesPanel eventId={event.id} />
+        </TabsContent>
+        <TabsContent value="orders" className="pt-6">
+          <OrdersPanel eventId={event.id} timeZone={event.timeZone} />
         </TabsContent>
         <TabsContent value="staff" className="pt-6">
           <StaffPanel eventId={event.id} />
@@ -168,12 +184,30 @@ function TicketsTab({ detail }: { detail: OrganizerEventDetail }) {
   const { event, ticketTypes } = detail
   const draft = event.status === 'DRAFT'
 
+  const seatedTypes = ticketTypes.filter((t) => t.kind === 'SEATED')
+
   return (
     <div className="flex flex-col gap-8">
       {!draft && (
         <Alert tone="info" variant="soft">
           Sự kiện đã công bố: loại vé và sơ đồ ghế không đổi được nữa, để không ảnh hưởng vé đang bán.
         </Alert>
+      )}
+      {draft && seatedTypes.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-5 py-4">
+          <Text size="sm" tone="muted">
+            Sơ đồ lớn (hàng nghìn ghế)? Soạn trong Excel rồi nhập một lần, dòng nào sai sẽ được chỉ ra.
+          </Text>
+          <SeatImportDialog
+            eventId={event.id}
+            seatedTypes={seatedTypes}
+            trigger={
+              <Button variant="outline" size="sm" leftIcon={<FileUp className="size-4" />}>
+                Nhập ghế từ file
+              </Button>
+            }
+          />
+        </div>
       )}
       {ticketTypes.length === 0 ? (
         <EmptyState

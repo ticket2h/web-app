@@ -15,7 +15,6 @@ import {
   FormField,
   Input,
   NativeSelect,
-  Pagination,
   Skeleton,
   Tabs,
   TabsContent,
@@ -34,7 +33,7 @@ import { ApiError, errorMessage } from '../../shared/api/problem'
 import type { Organizer, Role, User } from '../../shared/api/types'
 import { PageHeader } from '../../shared/ui/PageHeader'
 import { QueryError } from '../../shared/ui/QueryError'
-import { useCreateOrganizer, useCreateUser, useOrganizers, useUsers, USERS_PAGE_SIZE } from './api'
+import { useCreateOrganizer, useCreateUser, useOrganizers, useUsers } from './api'
 
 const ROLES: { value: Role; label: string; tone: 'neutral' | 'primary' | 'info' | 'warning' }[] = [
   { value: 'CUSTOMER', label: 'Khách hàng', tone: 'neutral' },
@@ -79,9 +78,9 @@ function UsersTab() {
   const [params, setParams] = useSearchParams()
   const role = isRole(params.get('role')) ? (params.get('role') as Role) : null
   const q = params.get('q') ?? ''
-  const page = Math.max(1, Number(params.get('page')) || 1)
   const [draft, setDraft] = useState(q)
-  const users = useUsers({ role, q, page: page - 1 })
+  const users = useUsers({ role, q })
+  const rows = users.data?.pages.flatMap((page) => page.items) ?? []
   const organizers = useOrganizers()
   const organizerName = new Map((organizers.data ?? []).map((o) => [o.id, o.name]))
 
@@ -97,7 +96,7 @@ function UsersTab() {
   useEffect(() => {
     const trimmed = draft.trim()
     if (trimmed === q) return
-    const timer = setTimeout(() => update({ q: trimmed || null, page: null }), 300)
+    const timer = setTimeout(() => update({ q: trimmed || null }), 300)
     return () => clearTimeout(timer)
   }, [draft, q])
 
@@ -126,8 +125,6 @@ function UsersTab() {
     },
   ]
 
-  const pageCount = users.data ? Math.max(1, Math.ceil(users.data.total / USERS_PAGE_SIZE)) : 1
-
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -144,7 +141,7 @@ function UsersTab() {
           <NativeSelect
             aria-label="Lọc theo vai trò"
             value={role ?? ''}
-            onChange={(event) => update({ role: event.target.value || null, page: null })}
+            onChange={(event) => update({ role: event.target.value || null })}
             wrapperClassName="sm:w-48"
           >
             <option value="">Mọi vai trò</option>
@@ -162,24 +159,23 @@ function UsersTab() {
       {users.isError && <QueryError title="Không tải được tài khoản" error={users.error} onRetry={() => users.refetch()} />}
       {users.data && (
         <>
-          <Text size="sm" tone="muted">
-            {users.data.total} tài khoản
-          </Text>
           <DataTable
             aria-label="Tài khoản"
-            data={users.data.items}
+            data={rows}
             columns={columns}
             variant="card"
             emptyState="Không có tài khoản nào khớp bộ lọc"
           />
-          {pageCount > 1 && (
-            <Pagination
-              className="justify-center"
-              pageCount={pageCount}
-              page={page}
-              onPageChange={(next) => update({ page: next > 1 ? String(next) : null })}
-            />
-          )}
+          <div className="flex flex-col items-center gap-2">
+            <Text size="sm" tone="muted" aria-live="polite">
+              Đang xem {rows.length.toLocaleString('vi-VN')} tài khoản{users.hasNextPage ? '' : ', đã hết danh sách'}
+            </Text>
+            {users.hasNextPage && (
+              <Button variant="outline" loading={users.isFetchingNextPage} onClick={() => users.fetchNextPage()}>
+                Xem thêm
+              </Button>
+            )}
+          </div>
         </>
       )}
     </div>

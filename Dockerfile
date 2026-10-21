@@ -16,6 +16,9 @@ COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY nginx/proxy-headers.inc /etc/nginx/conf.d/proxy-headers.inc
 COPY --from=build /src/dist /usr/share/nginx/html
 # Địa chỉ service trong docker compose của infra; ghi đè bằng biến môi trường khi chạy ở nơi khác
+# NGINX_ENTRYPOINT_LOCAL_RESOLVERS: entrypoint của image nginx đặt NGINX_LOCAL_RESOLVERS từ /etc/resolv.conf, cho
+# directive resolver trong nginx/default.conf.template (tra lại tên service khi service đổi IP)
 ENV IDENTITY_UPSTREAM=http://identity-service:8082 \
-    CORE_UPSTREAM=http://core-service:8080
+    CORE_UPSTREAM=http://core-service:8080 \
+    NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 EXPOSE 80

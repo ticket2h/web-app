@@ -1,6 +1,6 @@
 # Ticket2h web-app
 
-App web của Ticket2h (mua vé, vé của tôi; sau này: ban tổ chức, soát vé): SPA **React 19 + Vite + TypeScript**, thư viện giao diện
+App web của Ticket2h (mua vé, vé của tôi, ban tổ chức, soát vé, quản trị): SPA **React 19 + Vite + TypeScript**, thư viện giao diện
 [momi-ui](https://github.com/HoangDuong2k/momi-ui) (Tailwind CSS v4 + Radix), TanStack Query, React Router,
 react-hook-form + zod. Kiểu dữ liệu API sinh từ OpenAPI của các service. Quyết định thiết kế:
 [infra ADR-015](https://github.com/ticket2h/infra/blob/main/docs/adr/015-web-gateway-refresh-token.md).
@@ -13,13 +13,21 @@ react-hook-form + zod. Kiểu dữ liệu API sinh từ OpenAPI của các servi
 | | `/register`, `/login` | Đăng ký rồi đăng nhập luôn; giữ phiên qua refresh token |
 | | `/orders/:id` | Giữ chỗ (đếm ngược), thanh toán qua MockPay, huỷ đơn; tự hỏi lại tới khi có vé |
 | | `/me/orders`, `/me/tickets` | Đơn hàng; vé theo sự kiện, mã QR, chuyển nhượng cho tài khoản khác |
-| Ban tổ chức | `/organizer`, `/organizer/events/:id` | Địa điểm; tạo/sửa sự kiện (giờ theo múi giờ nơi diễn); loại vé ngồi/đứng; xếp ghế theo khối; phân công nhân viên soát vé; công bố (kiểm tra trước điều kiện) |
+| Ban tổ chức | `/organizer`, `/organizer/events/:id` | Địa điểm; tạo/sửa sự kiện (giờ theo múi giờ nơi diễn); loại vé ngồi/đứng; xếp ghế theo khối hoặc nhập cả sơ đồ từ file CSV (báo từng dòng lỗi); phân công nhân viên soát vé; công bố (kiểm tra trước điều kiện) |
+| | `?tab=sales` | Doanh thu (M4): doanh thu, vé, đơn; biểu đồ theo ngày (di chuột hoặc phím mũi tên để xem từng ngày), theo loại vé, theo kênh; bảng sắp xếp ở BE (bấm tiêu đề cột). Cách gom và cột sắp xếp nằm trên URL |
+| | `?tab=orders` | Đơn hàng (M4): người mua, vé, tiền, kênh, trạng thái; lọc trạng thái; "Xem thêm" theo cursor (keyset), sự kiện 200.000 đơn vẫn nhanh |
+| | nút "Xuất file" | Tải CSV danh sách khách và lịch sử soát vé (chọn khoảng ngày, tối đa 31 ngày); tải bằng `fetch` kèm access token rồi mới lưu |
 | Soát vé | `/checkin?gate=A1` | Quét QR bằng camera (trình duyệt có `BarcodeDetector`) hoặc dán mã; kết quả lớn theo màu, lịch sử lượt quét |
-| Quản trị | `/admin` | Tìm, lọc tài khoản; tạo tài khoản ban tổ chức, soát vé, quản trị; tạo ban tổ chức |
+| Quản trị | `/admin` | Tìm, lọc tài khoản ("Xem thêm" theo cursor, chạy được với 2 triệu tài khoản); tạo tài khoản ban tổ chức, soát vé, quản trị; tạo ban tổ chức |
 
 Giao diện: nền giấy ấm, màu son, poster tự vẽ cho từng sự kiện (`shared/ui/PosterArt.tsx`, chưa có ảnh từ BE), cuống
 vé có khuyết ở vé của tôi. Chữ: Be Vietnam Pro (giao diện) và Bricolage Grotesque (tiêu đề), tải từ Google Fonts.
-Có chế độ tối, dùng được trên điện thoại.
+Có chế độ tối, dùng được trên điện thoại. Biểu đồ doanh thu tự vẽ bằng HTML/Tailwind (momi-ui chưa có biểu đồ, không
+thêm thư viện): cột mảnh một màu (`--chart` trong `index.css`, đã kiểm tra độ tương phản ở cả hai chế độ), ngày không
+bán được vé vẫn có chỗ trên trục thời gian, bảng bên dưới có đủ số liệu cho ai không xem được biểu đồ.
+
+Thử với dữ liệu lớn: `../infra/scripts/datagen.sh` rồi đăng nhập `organizer1@test.local`, mở "Đại nhạc hội Ticket2h
+2026" (200.000 đơn).
 
 ### Luồng mua vé
 
@@ -101,6 +109,11 @@ docker build -t ghcr.io/ticket2h/web-app .
 docker run -p 3000:80 -e IDENTITY_UPSTREAM=http://host.docker.internal:8082 -e CORE_UPSTREAM=http://host.docker.internal:8080 ghcr.io/ticket2h/web-app
 ```
 
+nginx tra tên trong `*_UPSTREAM` bằng DNS lúc chạy (mỗi 10 giây), không đọc `/etc/hosts`: service trong compose đổi IP
+khi được tạo lại thì web-app vẫn tìm ra. `host.docker.internal` có sẵn trong DNS của Docker Desktop; trên Linux thì
+dùng IP của máy host nhìn từ container, ví dụ `-e CORE_UPSTREAM=http://172.17.0.1:8080` (nginx không cần tra IP).
+Gateway nén gzip mọi response JSON/CSV (sơ đồ 122.915 ghế: 20,5MB còn 2,1MB).
+
 Trong `infra`: `docker compose --profile apps up -d` chạy cả web-app ở http://localhost:3000. CI build image mỗi lần push
 lên `main` (giống các repo service).
 
@@ -113,15 +126,17 @@ src/
 ├── shared/
 │   ├── api/              client openapi-fetch, ApiError/ProblemDetail, kiểu; generated/ do script sinh, không sửa tay
 │   ├── auth/             phiên (token trong bộ nhớ, refresh), useSession, AuthBootstrap, RequireAuth, RequireRole
-│   ├── format/           tiền (VND), giờ theo múi giờ sự kiện, đổi giờ treo tường ↔ ISO
+│   ├── format/           tiền (VND, dạng gọn "1,2 tỷ" cho trục biểu đồ), giờ theo múi giờ sự kiện, giờ treo tường ↔ ISO
 │   ├── ui/               PosterArt, PageHeader, EmptyState, QueryError, badge trạng thái
+│   ├── download.ts       lưu file tải bằng fetch (CSV cần access token)
 │   └── hooks/            useNow (đếm ngược)
 ├── features/
 │   ├── auth/             đăng nhập, đăng ký, tài khoản
 │   ├── events/           danh sách, chi tiết, sơ đồ ghế, giỏ vé (checkout.ts)
 │   ├── orders/           đơn hàng, thanh toán, trang quay về từ MockPay
 │   ├── tickets/          vé của tôi, QR, chuyển nhượng
-│   ├── organizer/        sự kiện, địa điểm, loại vé, xếp ghế, nhân viên, công bố
+│   ├── organizer/        sự kiện, địa điểm, loại vé, xếp ghế, nhập ghế từ CSV, nhân viên, công bố;
+│   │                     doanh thu (SalesPanel, SalesChart, sales.ts), đơn hàng, xuất file
 │   ├── checkin/          soát vé: camera (BarcodeDetector) hoặc nhập tay
 │   └── admin/            tài khoản, ban tổ chức
 └── test/                 setup Vitest, renderApp, mockApi, signIn
@@ -136,5 +151,12 @@ scripts/gen-api-types.mjs sinh kiểu từ OpenAPI
 - BE chưa có: ảnh sự kiện (đang dùng poster tự vẽ), danh sách sự kiện được phân công cho nhân viên soát vé, xem
   trước sơ đồ ghế khi sự kiện còn nháp (API ghế chỉ mở cho sự kiện đã công bố), múi giờ trong `TicketResponse`.
 - Rút ngắn TTL access token khi refresh đã ổn định (ADR-015).
+- File CSV lớn (500.000 dòng, vài chục MB) nằm trọn trong bộ nhớ trình duyệt trước khi lưu. Muốn tải thẳng xuống đĩa
+  thì BE cần link tải có chữ ký ngắn hạn (không cần header Authorization).
+- Báo cáo doanh thu chưa có bộ lọc khoảng ngày trên giao diện (API đã có `from`, `to`).
+- **Sơ đồ ghế của sự kiện rất lớn** (việc đầu tiên của M5): trang mua vé và tab "Vé và ghế" tải và vẽ mọi ghế, hỏi lại
+  15 giây một lần. Với sự kiện sinh 122.915 ghế: API trả 20,5MB JSON (2,1MB khi gateway nén gzip), trang có 276.000 nút
+  DOM, heap JS 69MB, vẽ xong sau 1,1 giây trên máy dev, nặng với điện thoại. Hướng làm: tải theo khu (tổng quan các
+  khu trước, bấm vào khu mới tải ghế), cache ở BE, cập nhật ghế thay đổi qua SSE thay vì tải lại cả sơ đồ.
 - Navbar của momi-ui vẽ link bằng `<a href>`; `RootLayout` đang chặn click để chuyển trang trong app. Bỏ khi momi-ui
   cho truyền component link riêng.

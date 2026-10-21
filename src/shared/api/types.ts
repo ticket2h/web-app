@@ -24,7 +24,11 @@ export type LoginResponse = Omit<Defined<IdentitySchema['LoginResponse']>, 'user
 
 export type Organizer = Defined<IdentitySchema['OrganizerResponse']>
 
-export type UserPage = Omit<Defined<IdentitySchema['UserPageResponse']>, 'items'> & { items: User[] }
+/** Phân trang keyset: gửi lại `nextCursor` để lấy trang sau; `null` là hết danh sách. Không có tổng số. */
+export type UserPage = Omit<Defined<IdentitySchema['UserPageResponse']>, 'items' | 'nextCursor'> & {
+  items: User[]
+  nextCursor: string | null
+}
 
 export type CreateUserRequest = IdentitySchema['CreateUserRequest']
 
@@ -130,3 +134,51 @@ export type EventRequest = CoreSchema['EventRequest']
 export type TicketTypeRequest = CoreSchema['TicketTypeRequest']
 export type SeatSectionRequest = CoreSchema['SeatSectionRequest']
 export type CreateOrderRequest = CoreSchema['CreateOrderRequest']
+
+// ---- core-service: báo cáo, đơn, file của ban tổ chức (M4)
+
+export type SalesGroupBy = NonNullable<CoreSchema['SalesReportResponse']['groupBy']>
+export type SalesSort = NonNullable<CoreSchema['SalesReportResponse']['sort']>
+export type SortDirection = NonNullable<CoreSchema['SalesReportResponse']['direction']>
+export type SalesChannel = NonNullable<CoreSchema['OrganizerOrderRow']['salesChannel']>
+
+export type SalesTotals = Defined<CoreSchema['SalesTotals']>
+
+/**
+ * `key`: ngày YYYY-MM-DD, id loại vé hoặc mã kênh tuỳ `groupBy`. `label`: tên loại vé, null với hai cách gom kia.
+ * `orders`: null khi gom theo loại vé (một đơn có thể mua nhiều loại vé).
+ */
+export type SalesRow = Omit<Defined<CoreSchema['SalesRow']>, 'label' | 'orders'> & {
+  label: string | null
+  orders: number | null
+}
+
+/** `from`, `to`: null khi không lọc theo ngày. */
+export type SalesReport = Omit<Defined<CoreSchema['SalesReportResponse']>, 'totals' | 'rows' | 'from' | 'to'> & {
+  totals: SalesTotals
+  rows: SalesRow[]
+  from: string | null
+  to: string | null
+}
+
+/** `paidAt` null khi đơn chưa trả tiền; `buyer` null khi tài khoản người mua không còn ở identity. */
+export type OrganizerOrderRow = Omit<Defined<CoreSchema['OrganizerOrderRow']>, 'paidAt' | 'buyer'> & {
+  paidAt: string | null
+  buyer: Defined<CoreSchema['OrderBuyer']> | null
+}
+
+/** Phân trang keyset như {@link UserPage}. */
+export type OrganizerOrderPage = Omit<Defined<CoreSchema['OrganizerOrderPage']>, 'items' | 'nextCursor'> & {
+  items: OrganizerOrderRow[]
+  nextCursor: string | null
+}
+
+export type SeatImportResult = Omit<Defined<CoreSchema['SeatImportResponse']>, 'ticketTypes'> & {
+  ticketTypes: Defined<CoreSchema['SeatImportCount']>[]
+}
+
+/** Một dòng lỗi trong ProblemDetail SEAT_IMPORT_INVALID (`errors`, kèm `errorCount` là tổng số lỗi). */
+export interface SeatImportError {
+  line: number
+  message: string
+}

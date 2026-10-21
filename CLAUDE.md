@@ -26,6 +26,12 @@ SPA React 19 + Vite + TypeScript cho Ticket2h, giao diện bằng momi-ui. Một
 - Tiền hiển thị bằng `formatVnd`; giờ ban tổ chức nhập theo múi giờ sự kiện (`shared/format/zoned.ts`).
 - Đặt vé: một `Idempotency-Key` cho mỗi lựa chọn (`selectionKey`), dùng lại khi bấm lại cùng lựa chọn.
 - Chuyển trang ra ngoài app (MockPay) qua `goToExternal` (`shared/navigation.ts`) để test thay được.
+- Danh sách dài (đơn của sự kiện, tài khoản): API phân trang keyset, web dùng `useInfiniteQuery` + nút "Xem thêm" gửi
+  `nextCursor`; không có số trang, không có tổng.
+- Tải file cần đăng nhập (CSV): gọi qua `coreApi` với `parseAs: 'blob'` rồi `saveBlob` (`shared/download.ts`), không
+  dùng `<a href>` (không gửi được access token).
+- Biểu đồ: theo skill dataviz (một chuỗi số liệu một màu `bg-chart`, cột ≤ 24px, có tooltip và phím mũi tên, luôn có
+  bảng số liệu đi kèm). Màu biểu đồ mới phải chạy validator của skill cho cả nền sáng và nền tối.
 
 ## Cấm
 - Không thêm dependency mới nếu chưa hỏi.

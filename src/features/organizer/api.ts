@@ -1,17 +1,25 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { coreApi } from '../../shared/api/client'
 import { unwrap } from '../../shared/api/problem'
 import type {
   EventRequest,
+  OrderStatus,
   OrganizerEvent,
   OrganizerEventDetail,
+  OrganizerOrderPage,
   OrganizerTicketType,
   OrganizerVenue,
+  SalesGroupBy,
+  SalesReport,
+  SalesSort,
+  SeatImportResult,
   SeatSectionRequest,
+  SortDirection,
   StaffMember,
   TicketTypeRequest,
 } from '../../shared/api/types'
+import { filenameFrom, saveBlob } from '../../shared/download'
 
 /** Mọi API ở đây chỉ chạy với tài khoản ORGANIZER và chỉ thấy dữ liệu của ban tổ chức mình (BE kiểm tra). */
 const keys = {
@@ -19,6 +27,17 @@ const keys = {
   events: ['organizer', 'events'] as const,
   event: (id: string) => ['organizer', 'event', id] as const,
   staff: (id: string) => ['organizer', 'event', id, 'staff'] as const,
+  sales: (id: string, query: SalesQuery) => ['organizer', 'event', id, 'sales', query] as const,
+  orders: (id: string, status: OrderStatus | null) => ['organizer', 'event', id, 'orders', status] as const,
+}
+
+export const ORDERS_PAGE_SIZE = 25
+
+export interface SalesQuery {
+  groupBy: SalesGroupBy
+  /** null: BE tự chọn (theo ngày tăng dần khi gom theo ngày, còn lại doanh thu giảm dần). */
+  sort: SalesSort | null
+  direction: SortDirection | null
 }
 
 export function useVenues() {
@@ -138,6 +157,93 @@ export function useRemoveStaff(eventId: string) {
         await coreApi.DELETE('/organizer/events/{eventId}/staff/{userId}', { params: { path: { eventId, userId } } }),
       ),
     onSuccess: () => invalidateEvent(queryClient, eventId),
+  })
+}
+
+/**
+ * Báo cáo doanh thu từ bảng tổng hợp của core (chậm hơn thực tế vài giây). Đổi cách gom vẫn giữ số liệu cũ trên màn
+ * hình cho tới khi có số mới.
+ */
+export function useSalesReport(eventId: string, query: SalesQuery) {
+  return useQuery({
+    queryKey: keys.sales(eventId, query),
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await coreApi.GET('/organizer/events/{eventId}/sales', {
+          params: {
+            path: { eventId },
+            query: { groupBy: query.groupBy, sort: query.sort ?? undefined, direction: query.direction ?? undefined },
+          },
+          signal,
+        }),
+      ) as SalesReport,
+    placeholderData: keepPreviousData,
+    refetchInterval: 15_000,
+  })
+}
+
+/** Đơn của sự kiện, mới trước, phân trang keyset: mỗi lần "Xem thêm" gửi `nextCursor` của trang trước. */
+export function useOrganizerOrders(eventId: string, status: OrderStatus | null) {
+  return useInfiniteQuery({
+    queryKey: keys.orders(eventId, status),
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam, signal }) =>
+      unwrap(
+        await coreApi.GET('/organizer/events/{eventId}/orders', {
+          params: {
+            path: { eventId },
+            query: { status: status ?? undefined, cursor: pageParam ?? undefined, limit: ORDERS_PAGE_SIZE },
+          },
+          signal,
+        }),
+      ) as OrganizerOrderPage,
+    getNextPageParam: (page) => page.nextCursor,
+  })
+}
+
+/**
+ * Nhập ghế từ file CSV: gửi nguyên văn nội dung file. File có lỗi thì BE trả 422 SEAT_IMPORT_INVALID kèm `errors`
+ * (dòng, lý do) và không thêm ghế nào.
+ */
+export function useImportSeats(eventId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (csv: string) =>
+      unwrap(
+        await coreApi.POST('/organizer/events/{eventId}/seats/import', {
+          params: { path: { eventId } },
+          body: csv,
+          bodySerializer: (body) => body,
+          headers: { 'Content-Type': 'text/csv' },
+        }),
+      ) as SeatImportResult,
+    onSuccess: () => invalidateEvent(queryClient, eventId),
+  })
+}
+
+export type CsvExport = 'attendees' | 'checkins'
+
+/**
+ * Tải file CSV (cần access token nên không dùng link thường) rồi lưu xuống máy. `from`, `to` (YYYY-MM-DD theo múi
+ * giờ sự kiện) chỉ dùng cho lịch sử soát vé.
+ */
+export function useDownloadCsv(eventId: string) {
+  return useMutation({
+    mutationFn: async ({ kind, from, to }: { kind: CsvExport; from?: string; to?: string }) => {
+      const result =
+        kind === 'attendees'
+          ? await coreApi.GET('/organizer/events/{eventId}/attendees.csv', {
+              params: { path: { eventId } },
+              parseAs: 'blob',
+            })
+          : await coreApi.GET('/organizer/events/{eventId}/checkins.csv', {
+              params: { path: { eventId }, query: { from, to } },
+              parseAs: 'blob',
+            })
+      const blob = unwrap(result) as Blob
+      saveBlob(blob, filenameFrom(result.response.headers.get('Content-Disposition'), `${kind}.csv`))
+      return blob.size
+    },
   })
 }
 

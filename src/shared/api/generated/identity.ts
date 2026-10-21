@@ -17,6 +17,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/users/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["byIds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -178,6 +194,12 @@ export interface components {
             /** Format: uuid */
             organizerId?: string;
         };
+        UserBatchRequest: {
+            ids: string[];
+        };
+        UserBatchResponse: {
+            users?: components["schemas"]["UserResponse"][];
+        };
         RegisterRequest: {
             /** Format: email */
             email: string;
@@ -216,11 +238,8 @@ export interface components {
         UserPageResponse: {
             items?: components["schemas"]["UserResponse"][];
             /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            size?: number;
-            /** Format: int64 */
-            total?: number;
+            limit?: number;
+            nextCursor?: string;
         };
     };
     responses: never;
@@ -251,6 +270,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    byIds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserBatchResponse"];
                 };
             };
         };
@@ -350,8 +393,8 @@ export interface operations {
             query?: {
                 role?: "CUSTOMER" | "ORGANIZER" | "STAFF" | "ADMIN";
                 q?: string;
-                page?: number;
-                size?: number;
+                cursor?: string;
+                limit?: number;
             };
             header?: never;
             path?: never;

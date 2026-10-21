@@ -129,6 +129,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizer/events/{eventId}/seats/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importSeats"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizer/events/{eventId}/publish": {
         parameters: {
             query?: never;
@@ -265,6 +281,70 @@ export interface paths {
             cookie?: never;
         };
         get: operations["returnPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizer/events/{eventId}/sales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sales"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizer/events/{eventId}/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["orders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizer/events/{eventId}/checkins.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["checkins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizer/events/{eventId}/attendees.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["attendees"];
         put?: never;
         post?: never;
         delete?: never;
@@ -539,10 +619,22 @@ export interface components {
             /** Format: int32 */
             created?: number;
         };
+        SeatImportCount: {
+            ticketType?: string;
+            /** Format: int32 */
+            created?: number;
+        };
+        SeatImportResponse: {
+            /** Format: int32 */
+            created?: number;
+            ticketTypes?: components["schemas"]["SeatImportCount"][];
+        };
         CreateOrderRequest: {
             /** Format: uuid */
             eventId: string;
             items: components["schemas"]["Item"][];
+            /** @enum {string} */
+            channel?: "WEB" | "MOBILE_APP";
         };
         Item: {
             /** Format: uuid */
@@ -617,6 +709,66 @@ export interface components {
             event?: components["schemas"]["EventResponse"];
             ticketTypes?: components["schemas"]["TicketTypeResponse"][];
             staffUserIds?: string[];
+        };
+        SalesReportResponse: {
+            /** Format: uuid */
+            eventId?: string;
+            timeZone?: string;
+            currency?: string;
+            /** @enum {string} */
+            groupBy?: "DAY" | "TICKET_TYPE" | "CHANNEL";
+            /** @enum {string} */
+            sort?: "KEY" | "ORDERS" | "TICKETS" | "REVENUE";
+            /** @enum {string} */
+            direction?: "ASC" | "DESC";
+            /** Format: date */
+            from?: string;
+            /** Format: date */
+            to?: string;
+            totals?: components["schemas"]["SalesTotals"];
+            rows?: components["schemas"]["SalesRow"][];
+        };
+        SalesRow: {
+            key?: string;
+            label?: string;
+            /** Format: int64 */
+            orders?: number;
+            /** Format: int64 */
+            tickets?: number;
+            revenue?: number;
+        };
+        SalesTotals: {
+            /** Format: int64 */
+            orders?: number;
+            /** Format: int64 */
+            tickets?: number;
+            revenue?: number;
+        };
+        OrderBuyer: {
+            fullName?: string;
+            email?: string;
+        };
+        OrganizerOrderPage: {
+            items?: components["schemas"]["OrganizerOrderRow"][];
+            /** Format: int32 */
+            limit?: number;
+            nextCursor?: string;
+        };
+        OrganizerOrderRow: {
+            /** Format: uuid */
+            orderId?: string;
+            /** @enum {string} */
+            status?: "PENDING_PAYMENT" | "PAID" | "FULFILLED" | "EXPIRED" | "CANCELLED";
+            /** @enum {string} */
+            salesChannel?: "WEB" | "MOBILE_APP";
+            totalAmount?: number;
+            /** Format: int32 */
+            tickets?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            paidAt?: string;
+            buyer?: components["schemas"]["OrderBuyer"];
         };
         OrderSummary: {
             /** Format: uuid */
@@ -1010,6 +1162,32 @@ export interface operations {
             };
         };
     };
+    importSeats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "text/csv": string;
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeatImportResponse"];
+                };
+            };
+        };
+    };
     publish: {
         parameters: {
             query?: never;
@@ -1206,6 +1384,107 @@ export interface operations {
                 };
                 content: {
                     "text/html": string;
+                };
+            };
+        };
+    };
+    sales: {
+        parameters: {
+            query?: {
+                groupBy?: "DAY" | "TICKET_TYPE" | "CHANNEL";
+                sort?: "KEY" | "ORDERS" | "TICKETS" | "REVENUE";
+                direction?: "ASC" | "DESC";
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesReportResponse"];
+                };
+            };
+        };
+    };
+    orders: {
+        parameters: {
+            query?: {
+                status?: "PENDING_PAYMENT" | "PAID" | "FULFILLED" | "EXPIRED" | "CANCELLED";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizerOrderPage"];
+                };
+            };
+        };
+    };
+    checkins: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
+    attendees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
         };

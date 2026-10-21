@@ -7,21 +7,41 @@ server {
     server_name _;
     root /usr/share/nginx/html;
 
+    # Tra lại tên service mỗi 10 giây. Viết thẳng `proxy_pass http://core-service:8080/` thì nginx chỉ tra một lần lúc
+    # khởi động: core được tạo lại (IP mới, ví dụ sau infra/scripts/datagen.sh) là web-app trả 502 cho tới khi chính nó
+    # khởi động lại. Có biến trong proxy_pass thì nginx tra lại theo `valid`. NGINX_LOCAL_RESOLVERS là nameserver trong
+    # /etc/resolv.conf của container (Dockerfile bật NGINX_ENTRYPOINT_LOCAL_RESOLVERS): trong compose là DNS của Docker.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+    # Nén cả response từ các service (gzip_proxied any), không chỉ file tĩnh. Đo trên dữ liệu M4: sơ đồ 122.915 ghế
+    # 20,5MB còn 2,1MB; file 368.662 khách 49MB còn 8,4MB. JS/CSS của Vite cũng được nén.
+    gzip on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_vary on;
+    gzip_types application/json application/problem+json text/csv text/css application/javascript image/svg+xml;
+
     # API nội bộ giữa các service (/internal/**) và actuator không bao giờ mở ra ngoài.
     # nginx giải mã và gộp "//" trước khi so khớp, nên "%69nternal" hay "//internal" cũng bị chặn.
     location ~ ^/api/[^/]+/(internal|actuator)(/|$) {
         return 404;
     }
 
+    # Bỏ tiền tố /api/identity bằng rewrite: khi proxy_pass dùng biến, nginx không tự thay phần đường dẫn nữa
     location /api/identity/ {
-        proxy_pass ${IDENTITY_UPSTREAM}/;
+        set $identity_upstream ${IDENTITY_UPSTREAM};
+        rewrite ^/api/identity/(.*)$ /$1 break;
+        proxy_pass $identity_upstream;
         # identity đặt cookie refresh ở Path=/auth; trình duyệt thấy nó dưới /api/identity/auth
         proxy_cookie_path /auth /api/identity/auth;
         include /etc/nginx/conf.d/proxy-headers.inc;
     }
 
     location /api/core/ {
-        proxy_pass ${CORE_UPSTREAM}/;
+        set $core_upstream ${CORE_UPSTREAM};
+        rewrite ^/api/core/(.*)$ /$1 break;
+        proxy_pass $core_upstream;
         include /etc/nginx/conf.d/proxy-headers.inc;
     }
 
