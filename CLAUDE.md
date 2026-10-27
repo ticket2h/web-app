@@ -13,11 +13,16 @@ SPA React 19 + Vite + TypeScript cho Ticket2h, giao diện bằng momi-ui. Một
   viện đã có; class Tailwind viết nguyên văn, không ghép chuỗi.
 - Chữ hiển thị tiếng Việt. Giờ sự kiện hiển thị theo `timeZone` của sự kiện (`formatEventTime`).
 - Gọi API qua `coreApi` / `identityApi` (`src/shared/api/client.ts`) và `unwrap()`; không `fetch` thẳng tới service,
-  trừ `shared/auth/session.ts` (refresh/logout, tránh vòng lặp với middleware gắn token).
+  trừ `shared/auth/session.ts` (refresh/logout, tránh vòng lặp với middleware gắn token). Luồng SSE (sơ đồ ghế trực
+  tiếp) dùng `EventSource` thẳng tới `/api/core/...` (`features/events/useSeatStream.ts`): openapi-fetch không đọc
+  được SSE; chỉ dùng cho đường dẫn công khai (EventSource không gửi được access token).
 - Không sửa tay `src/shared/api/generated/`. Thu hẹp kiểu trong `src/shared/api/types.ts`, ghi rõ vì sao trường đó
   luôn có giá trị.
 - Lỗi xử lý theo `ApiError.code`, không theo chuỗi `detail`.
 - Access token chỉ ở trong bộ nhớ (`session.ts`). Không lưu token vào `localStorage`/`sessionStorage`, không log token.
+  Vé vào cửa của phòng chờ (`admissionToken`) cũng vậy: chỉ nằm trong cache của TanStack Query.
+- Sơ đồ ghế trực tiếp (M5): thay đổi qua SSE và ảnh chụp ghép theo `version` của từng ghế (`liveSeats.ts`), không
+  ghi đè cả mảng. Thêm chỗ ghi vào cache `['event', id, 'seats']` thì giữ dạng `SeatMapData` (`seats`, `seq`).
 - Trạng thái lọc, tìm kiếm, phân trang để trên URL (`useSearchParams`).
 - Code mới theo feature: `src/features/<tên>/` (trang, hook gọi API, hàm thuần + test cạnh nhau).
 - Test: hàm thuần test thẳng; trang test qua `renderApp(path)` + `mockApi({...})` (`src/test/render.tsx`), đăng nhập sẵn
@@ -30,6 +35,8 @@ SPA React 19 + Vite + TypeScript cho Ticket2h, giao diện bằng momi-ui. Một
   `nextCursor`; không có số trang, không có tổng.
 - Tải file cần đăng nhập (CSV): gọi qua `coreApi` với `parseAs: 'blob'` rồi `saveBlob` (`shared/download.ts`), không
   dùng `<a href>` (không gửi được access token).
+- Lịch sử thao tác (tab admin): BE thêm thao tác mới thì thêm nhãn trong `features/admin/audit.ts` (typecheck báo
+  thiếu sau khi sinh lại kiểu).
 - Biểu đồ: theo skill dataviz (một chuỗi số liệu một màu `bg-chart`, cột ≤ 24px, có tooltip và phím mũi tên, luôn có
   bảng số liệu đi kèm). Màu biểu đồ mới phải chạy validator của skill cho cả nền sáng và nền tối.
 

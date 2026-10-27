@@ -84,6 +84,7 @@ function detail(overrides: Partial<OrganizerEventDetail> = {}): OrganizerEventDe
       saleClosesAt: '2099-01-01T00:00:00Z',
       maxTicketsPerUser: 4,
       status: 'DRAFT',
+      waitingRoomAdmitPerSecond: null,
     },
     ticketTypes: [],
     staffUserIds: [],

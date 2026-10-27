@@ -34,6 +34,7 @@ import type { Organizer, Role, User } from '../../shared/api/types'
 import { PageHeader } from '../../shared/ui/PageHeader'
 import { QueryError } from '../../shared/ui/QueryError'
 import { useCreateOrganizer, useCreateUser, useOrganizers, useUsers } from './api'
+import { AuditTab } from './AuditTab'
 
 const ROLES: { value: Role; label: string; tone: 'neutral' | 'primary' | 'info' | 'warning' }[] = [
   { value: 'CUSTOMER', label: 'Khách hàng', tone: 'neutral' },
@@ -43,13 +44,15 @@ const ROLES: { value: Role; label: string; tone: 'neutral' | 'primary' | 'info' 
 ]
 const ROLE_VIEW = new Map(ROLES.map((r) => [r.value, r]))
 
+const TABS = ['users', 'organizers', 'audit'] as const
+
 function isRole(value: string | null): value is Role {
   return ROLES.some((r) => r.value === value)
 }
 
 export function AdminPage() {
   const [params, setParams] = useSearchParams()
-  const tab = params.get('tab') === 'organizers' ? 'organizers' : 'users'
+  const tab = TABS.find((t) => t === params.get('tab')) ?? 'users'
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -62,12 +65,16 @@ export function AdminPage() {
         <TabsList>
           <TabsTrigger value="users">Tài khoản</TabsTrigger>
           <TabsTrigger value="organizers">Ban tổ chức</TabsTrigger>
+          <TabsTrigger value="audit">Lịch sử thao tác</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="pt-6">
           <UsersTab />
         </TabsContent>
         <TabsContent value="organizers" className="pt-6">
           <OrganizersTab />
+        </TabsContent>
+        <TabsContent value="audit" className="pt-6">
+          <AuditTab />
         </TabsContent>
       </Tabs>
     </div>

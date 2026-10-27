@@ -1,8 +1,10 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { identityApi } from '../../shared/api/client'
+import { coreApi, identityApi } from '../../shared/api/client'
+import type { CoreAuditAction, IdentityAuditAction } from './audit'
 import { unwrap } from '../../shared/api/problem'
-import type { CreateUserRequest, Organizer, Role, User, UserPage } from '../../shared/api/types'
+import type { AuditLogPage, CreateUserRequest, Organizer, Role, User, UserPage } from '../../shared/api/types'
+import type { AuditSource } from './audit'
 
 export const USERS_PAGE_SIZE = 20
 
@@ -55,5 +57,35 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: async (body: CreateUserRequest) => unwrap(await identityApi.POST('/admin/users', { body })) as User,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  })
+}
+
+export const AUDIT_PAGE_SIZE = 50
+
+/**
+ * Lịch sử thao tác của một service, mới nhất trước, phân trang keyset (M6, ADR-023 ở infra). core: thao tác của ban
+ * tổ chức và job tiền; identity: admin tạo tài khoản, sự kiện bảo mật. `action` null: mọi thao tác.
+ */
+export function useAuditLogs(source: AuditSource, action: string | null) {
+  return useInfiniteQuery({
+    queryKey: ['admin', 'audit-logs', source, action],
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam, signal }) => {
+      const query = { cursor: pageParam ?? undefined, limit: AUDIT_PAGE_SIZE }
+      // `action` đã được AuditTab lọc theo danh sách thao tác của đúng nguồn (AUDIT_ACTIONS)
+      const result =
+        source === 'core'
+          ? await coreApi.GET('/admin/audit-logs', {
+              params: { query: { ...query, action: (action ?? undefined) as CoreAuditAction | undefined } },
+              signal,
+            })
+          : await identityApi.GET('/admin/audit-logs', {
+              params: { query: { ...query, action: (action ?? undefined) as IdentityAuditAction | undefined } },
+              signal,
+            })
+      return unwrap(result) as AuditLogPage
+    },
+    getNextPageParam: (page) => page.nextCursor,
+    placeholderData: keepPreviousData,
   })
 }

@@ -2,6 +2,11 @@
 # origin (không cần CORS, cookie refresh token dùng SameSite=Strict được). Proxy dev của Vite (vite.config.ts) làm y hệt.
 # ${IDENTITY_UPSTREAM}, ${CORE_UPSTREAM} được image nginx thay bằng biến môi trường lúc khởi động (envsubst).
 
+# Đăng nhập, đăng ký: tối đa 10 lần mỗi phút mỗi IP, dồn thêm 5 (đoán mật khẩu, tạo tài khoản hàng loạt). identity
+# không có Redis nên chặn ở gateway; core giới hạn request bằng Redis (ADR-026).
+limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+limit_req_status 429;
+
 server {
     listen 80;
     server_name _;
@@ -28,6 +33,15 @@ server {
         return 404;
     }
 
+    location ~ ^/api/identity/auth/(login|register)$ {
+        limit_req zone=auth burst=5 nodelay;
+        set $identity_upstream ${IDENTITY_UPSTREAM};
+        rewrite ^/api/identity/(.*)$ /$1 break;
+        proxy_pass $identity_upstream;
+        proxy_cookie_path /auth /api/identity/auth;
+        include /etc/nginx/conf.d/proxy-headers.inc;
+    }
+
     # Bỏ tiền tố /api/identity bằng rewrite: khi proxy_pass dùng biến, nginx không tự thay phần đường dẫn nữa
     location /api/identity/ {
         set $identity_upstream ${IDENTITY_UPSTREAM};
@@ -38,6 +52,9 @@ server {
         include /etc/nginx/conf.d/proxy-headers.inc;
     }
 
+    # CORE_UPSTREAM là tên chung của mọi instance core (infra: `core`): DNS trả nhiều địa chỉ thì nginx chia lần lượt.
+    # Sơ đồ ghế trực tiếp (SSE): core gửi X-Accel-Buffering: no nên nginx chuyển ngay từng event; core gửi keepalive
+    # mỗi 15 giây, dưới proxy_read_timeout 30 giây.
     location /api/core/ {
         set $core_upstream ${CORE_UPSTREAM};
         rewrite ^/api/core/(.*)$ /$1 break;

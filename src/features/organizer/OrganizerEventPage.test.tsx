@@ -20,6 +20,7 @@ function detail(ticketTypes: unknown[], status = 'DRAFT') {
       saleClosesAt: '2099-12-20T11:00:00Z',
       maxTicketsPerUser: 4,
       status,
+      waitingRoomAdmitPerSecond: null,
     },
     ticketTypes,
     staffUserIds: [],
@@ -96,5 +97,69 @@ describe('OrganizerEventPage', () => {
     mockApi({})
     renderApp(`/organizer/events/${EVENT_ID}`)
     expect(await screen.findByText('Bạn không có quyền xem trang này')).toBeInTheDocument()
+  })
+})
+
+describe('OrganizerEventPage: phòng chờ và giá vé', () => {
+  const vip = { ...vipNoSeats, seatCount: 50 }
+
+  it('turns the waiting room on with a rate', async () => {
+    signIn('ORGANIZER')
+    let body: unknown
+    mockApi({
+      [`GET /api/core/organizer/events/${EVENT_ID}`]: () => json(detail([vip])),
+      [`PUT /api/core/organizer/events/${EVENT_ID}/waiting-room`]: async (request) => {
+        body = await request.json()
+        return json({ ...detail([]).event, waitingRoomAdmitPerSecond: 200 })
+      },
+    })
+    renderApp(`/organizer/events/${EVENT_ID}`)
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Bật phòng chờ' }))
+    expect(screen.getByLabelText('Số người vào mỗi giây')).toHaveValue('100')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(body).toEqual({ admitPerSecond: 100 }))
+  })
+
+  it('shows who is waiting while the waiting room is on', async () => {
+    signIn('ORGANIZER')
+    const published = detail([vip], 'PUBLISHED')
+    mockApi({
+      [`GET /api/core/organizer/events/${EVENT_ID}`]: () =>
+        json({ ...published, event: { ...published.event, waitingRoomAdmitPerSecond: 150 } }),
+      [`GET /api/core/organizer/events/${EVENT_ID}/waiting-room`]: () =>
+        json({ admitPerSecond: 150, waiting: 4321, admitted: 87 }),
+      [`GET /api/core/events/${EVENT_ID}`]: () => json({}, 404),
+      [`GET /api/core/events/${EVENT_ID}/seats`]: () => json([]),
+    })
+    renderApp(`/organizer/events/${EVENT_ID}`)
+
+    expect(await screen.findByText('4.321')).toBeInTheDocument()
+    expect(screen.getByText('87')).toBeInTheDocument()
+  })
+
+  it('changes a ticket price even after publishing', async () => {
+    signIn('ORGANIZER')
+    let body: unknown
+    mockApi({
+      [`GET /api/core/organizer/events/${EVENT_ID}`]: () => json(detail([vip], 'PUBLISHED')),
+      [`PUT /api/core/organizer/events/${EVENT_ID}/ticket-types/vip/price`]: async (request) => {
+        body = await request.json()
+        return json({ ...vip, price: 2500000 })
+      },
+      [`GET /api/core/events/${EVENT_ID}`]: () => json({}, 404),
+      [`GET /api/core/events/${EVENT_ID}/seats`]: () => json([]),
+    })
+    renderApp(`/organizer/events/${EVENT_ID}`)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Đổi giá' }))
+    const dialog = await screen.findByRole('dialog')
+    const price = within(dialog).getByLabelText(/Giá mới/)
+    await userEvent.clear(price)
+    await userEvent.type(price, '2500000')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu giá mới' }))
+
+    await waitFor(() => expect(body).toEqual({ price: 2500000 }))
   })
 })

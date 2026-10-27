@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, Clock, MapPin, SearchX, Ticket, Users } from 'lucide-react'
 import {
   Alert,
@@ -38,6 +39,8 @@ import {
 import { saleStatus, type SaleStatus } from './format'
 import { QuantityStepper } from './QuantityStepper'
 import { SeatMap } from './SeatMap'
+import { queueIsOpen, useWaitingRoom } from './waitingRoom'
+import { WaitingRoomPanel } from './WaitingRoomPanel'
 
 export function EventDetailPage() {
   const { eventId } = useParams()
@@ -72,14 +75,24 @@ export function EventDetailPage() {
 function EventView({ event }: { event: EventDetail }) {
   const now = useNow(30_000)
   const sale = saleStatus(event, new Date(now))
+  const session = useSession()
+  const location = useLocation()
+  const queryClient = useQueryClient()
+  const isCustomer = session?.user.role === 'CUSTOMER'
   const hasSeated = event.ticketTypes.some((t) => t.kind === 'SEATED')
   const seats = useSeats(event.id, { enabled: hasSeated, live: sale.kind === 'onSale' })
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION)
 
+  // Phòng chờ (M5): khách đang mở trang thì tự vào hàng; đến lượt mới chọn ghế và đặt vé được
+  const queueOpen = event.waitingRoom && queueIsOpen(sale, now)
+  const queue = useWaitingRoom(event.id, queueOpen && isCustomer)
+  const admissionToken = queue.data?.state === 'ADMITTED' ? queue.data.admissionToken : null
+  const waitingForTurn = event.waitingRoom && sale.kind === 'onSale' && !admissionToken
+
   const seatsById = useMemo(() => new Map((seats.data ?? []).map((s) => [s.seatId, s])), [seats.data])
   const count = selectedCount(selection)
   const limitReached = count >= event.maxTicketsPerUser
-  const canSelect = sale.kind === 'onSale'
+  const canSelect = sale.kind === 'onSale' && !waitingForTurn
   const minPrice = Math.min(...event.ticketTypes.map((t) => t.price))
 
   const toggleSeat = (seat: Seat) =>
@@ -141,13 +154,20 @@ function EventView({ event }: { event: EventDetail }) {
         <Separator className="mb-10" />
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="flex min-w-0 flex-col gap-10">
+            {queueOpen && (!session || isCustomer) && (
+              <WaitingRoomPanel
+                status={session ? queue : null}
+                loginPath={`/login?next=${encodeURIComponent(location.pathname)}`}
+              />
+            )}
+
             {hasSeated && (
               <section aria-labelledby="seat-heading">
                 <Heading as="h2" id="seat-heading" size="xl" className="mb-1">
                   Chọn ghế
                 </Heading>
                 <Text size="sm" tone="muted" className="mb-6">
-                  Bấm vào ghế trống để chọn, bấm lần nữa để bỏ. Sơ đồ tự cập nhật khi có người khác giữ ghế.
+                  Bấm vào ghế trống để chọn, bấm lần nữa để bỏ. Ghế người khác vừa giữ chuyển xám ngay trên sơ đồ.
                 </Text>
                 {seats.isPending && <Skeleton className="h-72 rounded-xl" />}
                 {seats.isError && (
@@ -214,6 +234,13 @@ function EventView({ event }: { event: EventDetail }) {
               seatsById={seatsById}
               onSelectionChange={setSelection}
               onSeatsChanged={() => seats.refetch()}
+              admissionToken={admissionToken}
+              waitingForTurn={waitingForTurn}
+              onAdmissionLost={() => {
+                // Ban tổ chức có thể vừa bật phòng chờ giữa giờ bán: tải lại sự kiện để hiện phòng chờ
+                void queryClient.invalidateQueries({ queryKey: ['event', event.id], exact: true })
+                void queue.refetch()
+              }}
             />
           </aside>
         </div>
@@ -229,9 +256,25 @@ interface OrderSummaryProps {
   seatsById: Map<string, Seat>
   onSelectionChange: (selection: Selection) => void
   onSeatsChanged: () => void
+  /** Vé vào cửa của phòng chờ; null khi sự kiện không có phòng chờ hoặc chưa đến lượt. */
+  admissionToken: string | null
+  /** Sự kiện có phòng chờ và chưa đến lượt: chưa đặt được. */
+  waitingForTurn: boolean
+  /** BE báo vé vào cửa hết hạn: hỏi lại phòng chờ (được xếp lại vào hàng). */
+  onAdmissionLost: () => void
 }
 
-function OrderSummary({ event, sale, selection, seatsById, onSelectionChange, onSeatsChanged }: OrderSummaryProps) {
+function OrderSummary({
+  event,
+  sale,
+  selection,
+  seatsById,
+  onSelectionChange,
+  onSeatsChanged,
+  admissionToken,
+  waitingForTurn,
+  onAdmissionLost,
+}: OrderSummaryProps) {
   const session = useSession()
   const location = useLocation()
   const navigate = useNavigate()
@@ -249,7 +292,7 @@ function OrderSummary({ event, sale, selection, seatsById, onSelectionChange, on
     const idempotencyKey = attempt?.key === key ? attempt.idempotencyKey : crypto.randomUUID()
     setAttempt({ key, idempotencyKey })
     createOrder.mutate(
-      { body: buildOrderRequest(event.id, selection, seatsById), idempotencyKey },
+      { body: buildOrderRequest(event.id, selection, seatsById), idempotencyKey, admissionToken },
       {
         onSuccess: (order) => navigate(`/orders/${order.orderId}`),
         onError: (error) => {
@@ -259,6 +302,10 @@ function OrderSummary({ event, sale, selection, seatsById, onSelectionChange, on
             onSelectionChange(withoutSeats(selection, taken))
             onSeatsChanged()
             setNotice('Một số ghế vừa có người giữ nên đã được bỏ khỏi lựa chọn. Chọn ghế khác rồi đặt lại.')
+          }
+          if (error.code === 'ADMISSION_REQUIRED') {
+            onAdmissionLost()
+            setNotice('Lượt vào của bạn đã hết hạn nên bạn được xếp lại vào hàng chờ.')
           }
           if (error.status === 401) {
             navigate(`/login?next=${encodeURIComponent(location.pathname)}`)
@@ -275,7 +322,9 @@ function OrderSummary({ event, sale, selection, seatsById, onSelectionChange, on
         ? 'Sự kiện đã đóng bán'
         : session && !isCustomer
           ? 'Chỉ tài khoản khách hàng mới đặt được vé'
-          : null
+          : session && waitingForTurn
+            ? 'Đang xếp hàng trong phòng chờ, đến lượt mới đặt được vé'
+            : null
 
   const action = !session ? (
     <Button asChild fullWidth size="lg">
@@ -339,7 +388,7 @@ function OrderSummary({ event, sale, selection, seatsById, onSelectionChange, on
               {notice}
             </Alert>
           )}
-          {createOrder.isError && !(createOrder.error instanceof ApiError && createOrder.error.code === 'SEAT_UNAVAILABLE') && (
+          {createOrder.isError && !isHandled(createOrder.error) && (
             <Alert tone="danger" variant="soft" role="alert">
               {errorMessage(createOrder.error)}
             </Alert>
@@ -370,6 +419,11 @@ function OrderSummary({ event, sale, selection, seatsById, onSelectionChange, on
       </div>
     </>
   )
+}
+
+/** Lỗi đã có thông báo riêng (`notice`), không hiện thêm hộp lỗi chung. */
+function isHandled(error: unknown): boolean {
+  return error instanceof ApiError && (error.code === 'SEAT_UNAVAILABLE' || error.code === 'ADMISSION_REQUIRED')
 }
 
 function SaleLine({ sale, timeZone }: { sale: SaleStatus; timeZone: string }) {

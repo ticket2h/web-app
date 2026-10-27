@@ -7,7 +7,7 @@ const vip: TicketTypeView = { id: 'vip', name: 'VIP', kind: 'SEATED', price: 1_5
 const ga: TicketTypeView = { id: 'ga', name: 'Phổ thông', kind: 'GA', price: 800_000, available: 100 }
 
 function seat(id: string, row: string, number: number, section = 'A'): Seat {
-  return { seatId: id, ticketTypeId: 'vip', section, row, number, status: 'AVAILABLE' }
+  return { seatId: id, ticketTypeId: 'vip', section, row, number, status: 'AVAILABLE', version: 0 }
 }
 
 const seats = [seat('s1', 'A', 1), seat('s2', 'A', 2), seat('s3', 'B', 10)]

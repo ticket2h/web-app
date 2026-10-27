@@ -85,3 +85,83 @@ describe('AdminPage', () => {
     expect(screen.queryByRole('button', { name: 'Xem thêm' })).not.toBeInTheDocument()
   })
 })
+
+describe('AdminPage: lịch sử thao tác', () => {
+  const priceChange = {
+    id: 'a1',
+    occurredAt: '2026-11-01T12:00:00Z',
+    actor: { type: 'USER', id: 'u1', role: 'ORGANIZER', name: null, email: 'organizer1@test.local', fullName: 'BTC Sky' },
+    action: 'TICKET_TYPE_PRICE_CHANGED',
+    targetType: 'TICKET_TYPE',
+    targetId: 't1',
+    organizerId: 'o1',
+    eventId: 'e1',
+    details: { name: 'VIP', from: 1500000, to: 1800000 },
+  }
+  const refund = {
+    id: 'a2',
+    occurredAt: '2026-11-01T11:00:00Z',
+    actor: { type: 'SYSTEM', id: null, role: null, name: 'refund-job', email: null, fullName: null },
+    action: 'PAYMENT_REFUNDED',
+    targetType: 'PAYMENT',
+    targetId: 'p1',
+    organizerId: null,
+    eventId: 'e1',
+    details: { amount: 500000 },
+  }
+
+  it('lists core history with readable labels and loads more with the cursor', async () => {
+    signIn('ADMIN')
+    const queries: string[] = []
+    mockApi({
+      'GET /api/core/admin/audit-logs': (request) => {
+        const search = new URL(request.url).search
+        queries.push(search)
+        return search.includes('cursor=')
+          ? json({ items: [refund], limit: 50, nextCursor: null })
+          : json({ items: [priceChange], limit: 50, nextCursor: 'c1' })
+      },
+    })
+    renderApp('/admin?tab=audit')
+
+    expect(await screen.findByText('organizer1@test.local')).toBeInTheDocument()
+    expect(screen.getByText('Đổi giá vé', { selector: '[data-slot=badge]' })).toBeInTheDocument()
+    expect(screen.getByText(/VIP: 1\.500\.000.*→ 1\.800\.000/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Xem thêm' }))
+
+    expect(await screen.findByText('Job hoàn tiền')).toBeInTheDocument()
+    expect(queries).toEqual(['?limit=50', '?cursor=c1&limit=50'])
+    expect(screen.getByText('Đang xem 2 thao tác, đã hết lịch sử')).toBeInTheDocument()
+  })
+
+  it('switches to identity history and filters by action from the URL', async () => {
+    signIn('ADMIN')
+    const queries: string[] = []
+    mockApi({
+      'GET /api/identity/admin/audit-logs': (request) => {
+        queries.push(new URL(request.url).search)
+        return json({
+          items: [
+            {
+              id: 'a3',
+              occurredAt: '2026-11-01T10:00:00Z',
+              actor: { type: 'SYSTEM', id: null, role: null, name: 'refresh-token', email: null, fullName: null },
+              action: 'REFRESH_TOKEN_REUSE_DETECTED',
+              targetType: 'USER',
+              targetId: 'u9',
+              targetEmail: 'buyer1@test.local',
+              details: { familyId: 'f1', revokedTokens: 2 },
+            },
+          ],
+          limit: 50,
+          nextCursor: null,
+        })
+      },
+    })
+    renderApp('/admin?tab=audit&source=identity&action=REFRESH_TOKEN_REUSE_DETECTED')
+
+    expect(await screen.findByText('buyer1@test.local')).toBeInTheDocument()
+    expect(screen.getByText(/Thu hồi 2 token/)).toBeInTheDocument()
+    expect(queries[0]).toBe('?limit=50&action=REFRESH_TOKEN_REUSE_DETECTED')
+  })
+})

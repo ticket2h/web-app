@@ -17,6 +17,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizer/events/{eventId}/waiting-room": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stats"];
+        put: operations["setWaitingRoom"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizer/events/{eventId}/ticket-types/{ticketTypeId}/price": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["changePrice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/payments/mockpay": {
         parameters: {
             query?: never;
@@ -203,6 +235,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/events/{eventId}/waiting-room": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["status"];
+        put?: never;
+        post: operations["join"];
         delete?: never;
         options?: never;
         head?: never;
@@ -465,6 +513,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/events/{eventId}/seats/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dev/tickets/{ticketId}/qr-token": {
         parameters: {
             query?: never;
@@ -473,6 +537,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["qrToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -533,6 +613,29 @@ export interface components {
             maxTicketsPerUser?: number;
             /** @enum {string} */
             status?: "DRAFT" | "PUBLISHED";
+            /** Format: int32 */
+            waitingRoomAdmitPerSecond?: number;
+        };
+        WaitingRoomRequest: {
+            /** Format: int32 */
+            admitPerSecond?: number;
+        };
+        PriceRequest: {
+            price: number;
+        };
+        TicketTypeResponse: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            /** @enum {string} */
+            kind?: "SEATED" | "GA";
+            price?: number;
+            /** Format: int32 */
+            totalQuantity?: number;
+            /** Format: int32 */
+            availableQuantity?: number;
+            /** Format: int32 */
+            seatCount?: number;
         };
         TransferRequest: {
             /** Format: email */
@@ -577,20 +680,6 @@ export interface components {
             price: number;
             /** Format: int32 */
             quantity?: number;
-        };
-        TicketTypeResponse: {
-            /** Format: uuid */
-            id?: string;
-            name?: string;
-            /** @enum {string} */
-            kind?: "SEATED" | "GA";
-            price?: number;
-            /** Format: int32 */
-            totalQuantity?: number;
-            /** Format: int32 */
-            availableQuantity?: number;
-            /** Format: int32 */
-            seatCount?: number;
         };
         StaffRequest: {
             /** Format: email */
@@ -681,6 +770,21 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
         };
+        QueueStatus: {
+            /** @enum {string} */
+            state?: "NOT_REQUIRED" | "NOT_IN_QUEUE" | "WAITING" | "ADMITTED";
+            /** Format: int64 */
+            position?: number;
+            /** Format: int64 */
+            waiting?: number;
+            /** Format: int64 */
+            estimatedWaitSeconds?: number;
+            /** Format: int32 */
+            pollAfterSeconds?: number;
+            admissionToken?: string;
+            /** Format: date-time */
+            admissionExpiresAt?: string;
+        };
         CheckinRequest: {
             qrToken: string;
             gate: string;
@@ -709,6 +813,14 @@ export interface components {
             event?: components["schemas"]["EventResponse"];
             ticketTypes?: components["schemas"]["TicketTypeResponse"][];
             staffUserIds?: string[];
+        };
+        WaitingRoomStats: {
+            /** Format: int32 */
+            admitPerSecond?: number;
+            /** Format: int64 */
+            waiting?: number;
+            /** Format: int64 */
+            admitted?: number;
         };
         SalesReportResponse: {
             /** Format: uuid */
@@ -840,6 +952,7 @@ export interface components {
             /** Format: int32 */
             maxTicketsPerUser?: number;
             onSale?: boolean;
+            waitingRoom?: boolean;
             venue?: components["schemas"]["VenueView"];
             ticketTypes?: components["schemas"]["TicketTypeView"][];
         };
@@ -868,6 +981,45 @@ export interface components {
             /** Format: int32 */
             number?: number;
             status?: string;
+            /** Format: int64 */
+            version?: number;
+        };
+        SseEmitter: {
+            /** Format: int64 */
+            timeout?: number;
+        };
+        Actor: {
+            type?: string;
+            /** Format: uuid */
+            id?: string;
+            role?: string;
+            name?: string;
+            email?: string;
+            fullName?: string;
+        };
+        AuditLogItem: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date-time */
+            occurredAt?: string;
+            actor?: components["schemas"]["Actor"];
+            action?: string;
+            targetType?: string;
+            /** Format: uuid */
+            targetId?: string;
+            /** Format: uuid */
+            organizerId?: string;
+            /** Format: uuid */
+            eventId?: string;
+            details?: {
+                [key: string]: unknown;
+            };
+        };
+        AuditLogPage: {
+            items?: components["schemas"]["AuditLogItem"][];
+            /** Format: int32 */
+            limit?: number;
+            nextCursor?: string;
         };
     };
     responses: never;
@@ -922,6 +1074,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+        };
+    };
+    stats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitingRoomStats"];
+                };
+            };
+        };
+    };
+    setWaitingRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitingRoomRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+        };
+    };
+    changePrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+                ticketTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketTypeResponse"];
                 };
             };
         };
@@ -1215,6 +1442,7 @@ export interface operations {
             query?: never;
             header?: {
                 "Idempotency-Key"?: string;
+                "Admission-Token"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1276,6 +1504,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderResponse"];
+                };
+            };
+        };
+    };
+    status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueStatus"];
+                };
+            };
+        };
+    };
+    join: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueStatus"];
                 };
             };
         };
@@ -1622,6 +1894,31 @@ export interface operations {
     seats: {
         parameters: {
             query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Seat-Map-Seq"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeatView"][];
+                };
+            };
+        };
+    };
+    stream: {
+        parameters: {
+            query?: never;
             header?: never;
             path: {
                 eventId: string;
@@ -1636,7 +1933,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SeatView"][];
+                    "text/event-stream": components["schemas"]["SseEmitter"];
                 };
             };
         };
@@ -1661,6 +1958,32 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    list: {
+        parameters: {
+            query?: {
+                action?: "VENUE_CREATED" | "EVENT_CREATED" | "EVENT_UPDATED" | "EVENT_PUBLISHED" | "WAITING_ROOM_CHANGED" | "TICKET_TYPE_CREATED" | "TICKET_TYPE_PRICE_CHANGED" | "SEATS_ADDED" | "SEATS_IMPORTED" | "STAFF_ASSIGNED" | "STAFF_REMOVED" | "ATTENDEES_EXPORTED" | "CHECKINS_EXPORTED" | "PAYMENT_REFUND_REQUESTED" | "PAYMENT_REFUNDED" | "PAYMENT_AMOUNT_MISMATCH" | "PAYMENT_RECONCILED";
+                organizerId?: string;
+                eventId?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogPage"];
                 };
             };
         };

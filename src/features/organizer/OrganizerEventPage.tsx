@@ -1,4 +1,4 @@
-import { ArrowLeft, Armchair, CircleCheck, CircleX, ExternalLink, FileUp, Plus, Rocket, Ticket } from 'lucide-react'
+import { ArrowLeft, Armchair, CircleCheck, CircleX, ExternalLink, FileUp, Pencil, Plus, Rocket, Ticket } from 'lucide-react'
 import {
   Alert,
   AlertDialog,
@@ -41,11 +41,13 @@ import { EventForm } from './EventForm'
 import { formDefaults } from './eventForm'
 import { ExportMenu } from './ExportMenu'
 import { OrdersPanel } from './OrdersPanel'
+import { PriceDialog } from './PriceDialog'
 import { SalesPanel } from './SalesPanel'
 import { SeatImportDialog } from './SeatImportDialog'
 import { SeatsDialog } from './SeatsDialog'
 import { publishChecklist } from './seating'
 import { StaffPanel } from './StaffPanel'
+import { WaitingRoomCard } from './WaitingRoomCard'
 import { TicketTypeDialog } from './TicketTypeDialog'
 
 const TABS = ['tickets', 'sales', 'orders', 'staff', 'details'] as const
@@ -190,7 +192,8 @@ function TicketsTab({ detail }: { detail: OrganizerEventDetail }) {
     <div className="flex flex-col gap-8">
       {!draft && (
         <Alert tone="info" variant="soft">
-          Sự kiện đã công bố: loại vé và sơ đồ ghế không đổi được nữa, để không ảnh hưởng vé đang bán.
+          Sự kiện đã công bố: không thêm loại vé hay ghế được nữa, để không ảnh hưởng vé đang bán. Giá vé vẫn đổi được
+          (đơn đã đặt giữ giá lúc mua).
         </Alert>
       )}
       {draft && seatedTypes.length > 0 && (
@@ -239,6 +242,7 @@ function TicketsTab({ detail }: { detail: OrganizerEventDetail }) {
           )}
         </Grid>
       )}
+      <WaitingRoomCard event={event} />
       {!draft && ticketTypes.some((t) => t.kind === 'SEATED') && <PublishedSeatMap eventId={event.id} />}
     </div>
   )
@@ -260,9 +264,20 @@ function TicketTypeCard({ eventId, type, editable }: { eventId: string; type: Or
               {formatVnd(type.price)}
             </Text>
           </div>
-          <Badge variant="outline" tone={seated ? 'info' : 'neutral'}>
-            {seated ? 'Vé ngồi' : 'Vé đứng'}
-          </Badge>
+          <div className="flex flex-col items-end gap-2">
+            <Badge variant="outline" tone={seated ? 'info' : 'neutral'}>
+              {seated ? 'Vé ngồi' : 'Vé đứng'}
+            </Badge>
+            <PriceDialog
+              eventId={eventId}
+              type={type}
+              trigger={
+                <Button size="xs" variant="ghost" leftIcon={<Pencil className="size-3.5" />}>
+                  Đổi giá
+                </Button>
+              }
+            />
+          </div>
         </div>
         {seated ? (
           <div className="mt-auto flex items-center justify-between gap-3">

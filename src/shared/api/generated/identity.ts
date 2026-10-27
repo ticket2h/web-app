@@ -161,6 +161,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["auditLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/.well-known/jwks.json": {
         parameters: {
             query?: never;
@@ -240,6 +256,36 @@ export interface components {
             /** Format: int32 */
             limit?: number;
             nextCursor?: string;
+        };
+        Actor: {
+            type?: string;
+            /** Format: uuid */
+            id?: string;
+            role?: string;
+            name?: string;
+            email?: string;
+            fullName?: string;
+        };
+        AuditLogPageResponse: {
+            items?: components["schemas"]["Item"][];
+            /** Format: int32 */
+            limit?: number;
+            nextCursor?: string;
+        };
+        Item: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: date-time */
+            occurredAt?: string;
+            actor?: components["schemas"]["Actor"];
+            action?: string;
+            targetType?: string;
+            /** Format: uuid */
+            targetId?: string;
+            targetEmail?: string;
+            details?: {
+                [key: string]: unknown;
+            };
         };
     };
     responses: never;
@@ -519,6 +565,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+        };
+    };
+    auditLogs: {
+        parameters: {
+            query?: {
+                action?: "ORGANIZER_CREATED" | "USER_CREATED" | "REFRESH_TOKEN_REUSE_DETECTED";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogPageResponse"];
                 };
             };
         };

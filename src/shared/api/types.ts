@@ -45,7 +45,10 @@ export type TicketTypeView = Defined<CoreSchema['TicketTypeView']>
 
 export type Venue = Defined<CoreSchema['VenueView']>
 
-/** `description` là chuỗi rỗng khi ban tổ chức không nhập (BE không trả null). */
+/**
+ * `description` là chuỗi rỗng khi ban tổ chức không nhập (BE không trả null). `waitingRoom`: lúc đang bán phải xếp
+ * hàng trong phòng chờ trước khi đặt vé (M5).
+ */
 export type EventDetail = Omit<Defined<CoreSchema['EventDetail']>, 'venue' | 'ticketTypes'> & {
   venue: Venue
   ticketTypes: TicketTypeView[]
@@ -54,7 +57,26 @@ export type EventDetail = Omit<Defined<CoreSchema['EventDetail']>, 'venue' | 'ti
 /** Trạng thái hiệu lực: ghế HELD đã quá hạn giữ được BE trả là AVAILABLE. */
 export type SeatStatus = 'AVAILABLE' | 'HELD' | 'SOLD'
 
+/** `version`: tăng mỗi lần ghế đổi trạng thái; sơ đồ trực tiếp chỉ áp thay đổi có version lớn hơn (M5). */
 export type Seat = Omit<Defined<CoreSchema['SeatView']>, 'status'> & { status: SeatStatus }
+
+// ---- core-service: phòng chờ (M5)
+
+export type QueueState = NonNullable<CoreSchema['QueueStatus']['state']>
+
+/**
+ * `position`, `estimatedWaitSeconds`: chỉ có khi WAITING. `waiting`: khi WAITING hoặc NOT_IN_QUEUE.
+ * `admissionToken`, `admissionExpiresAt`: chỉ có khi ADMITTED. `pollAfterSeconds` luôn có (0 khi không cần hỏi lại).
+ */
+export type QueueStatus = {
+  state: QueueState
+  position: number | null
+  waiting: number | null
+  estimatedWaitSeconds: number | null
+  pollAfterSeconds: number
+  admissionToken: string | null
+  admissionExpiresAt: string | null
+}
 
 // ---- core-service: đơn hàng, thanh toán
 
@@ -100,7 +122,15 @@ export interface CheckinResponse {
 
 export type EventStatus = NonNullable<CoreSchema['EventResponse']['status']>
 
-export type OrganizerEvent = Defined<CoreSchema['EventResponse']>
+/** `waitingRoomAdmitPerSecond`: null khi không có phòng chờ. */
+export type OrganizerEvent = Omit<Defined<CoreSchema['EventResponse']>, 'waitingRoomAdmitPerSecond'> & {
+  waitingRoomAdmitPerSecond: number | null
+}
+
+/** Phòng chờ đang chạy: `admitPerSecond` null khi tắt (khi đó hai số đếm là 0). */
+export type WaitingRoomStats = Omit<Defined<CoreSchema['WaitingRoomStats']>, 'admitPerSecond'> & {
+  admitPerSecond: number | null
+}
 
 export type OrganizerVenue = Defined<CoreSchema['VenueResponse']>
 
@@ -182,3 +212,38 @@ export interface SeatImportError {
   line: number
   message: string
 }
+
+// ---- lịch sử thao tác (M6): core-service và identity-service, cùng dạng
+
+/**
+ * Người làm: `USER` có `id`, `role` (từ JWT), `email`, `fullName` (tra lúc đọc, null nếu tài khoản không còn);
+ * `SYSTEM` có `name` (job nào làm: `refund-job`, `payment-reconciliation`...).
+ */
+export type AuditActor = {
+  type: 'USER' | 'SYSTEM'
+  id: string | null
+  role: string | null
+  name: string | null
+  email: string | null
+  fullName: string | null
+}
+
+/**
+ * `action`, `targetType` để dạng chuỗi (thao tác cũ đã bỏ khỏi BE vẫn hiện được). `organizerId`, `eventId` chỉ có ở
+ * core; `targetEmail` chỉ có ở identity. `details` khác nhau theo thao tác, không chứa email hay mật khẩu.
+ */
+export type AuditLogItem = {
+  id: string
+  occurredAt: string
+  actor: AuditActor
+  action: string
+  targetType: string
+  targetId: string | null
+  organizerId?: string | null
+  eventId?: string | null
+  targetEmail?: string | null
+  details: Record<string, unknown>
+}
+
+/** Phân trang keyset như {@link UserPage}. */
+export type AuditLogPage = { items: AuditLogItem[]; limit: number; nextCursor: string | null }

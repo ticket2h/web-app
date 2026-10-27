@@ -18,6 +18,7 @@ import type {
   SortDirection,
   StaffMember,
   TicketTypeRequest,
+  WaitingRoomStats,
 } from '../../shared/api/types'
 import { filenameFrom, saveBlob } from '../../shared/download'
 
@@ -29,6 +30,7 @@ const keys = {
   staff: (id: string) => ['organizer', 'event', id, 'staff'] as const,
   sales: (id: string, query: SalesQuery) => ['organizer', 'event', id, 'sales', query] as const,
   orders: (id: string, status: OrderStatus | null) => ['organizer', 'event', id, 'orders', status] as const,
+  waitingRoom: (id: string) => ['organizer', 'event', id, 'waiting-room'] as const,
 }
 
 export const ORDERS_PAGE_SIZE = 25
@@ -124,6 +126,55 @@ export function useAddSeats(eventId: string) {
         await coreApi.POST('/organizer/events/{eventId}/seats', { params: { path: { eventId } }, body }),
       ) as { created: number },
     onSuccess: () => invalidateEvent(queryClient, eventId),
+  })
+}
+
+/**
+ * Đổi giá loại vé, được cả khi đang bán (M6): chỉ áp dụng cho đơn tạo sau đó, đơn cũ giữ giá lúc mua. Được ghi vào
+ * lịch sử thao tác.
+ */
+export function useChangePrice(eventId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ ticketTypeId, price }: { ticketTypeId: string; price: number }) =>
+      unwrap(
+        await coreApi.PUT('/organizer/events/{eventId}/ticket-types/{ticketTypeId}/price', {
+          params: { path: { eventId, ticketTypeId } },
+          body: { price },
+        }),
+      ) as OrganizerTicketType,
+    onSuccess: () => invalidateEvent(queryClient, eventId),
+  })
+}
+
+/** Bật phòng chờ với `admitPerSecond` người vào mỗi giây, hoặc tắt (`null`). Đổi được cả khi đang bán (M5). */
+export function useSetWaitingRoom(eventId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (admitPerSecond: number | null) =>
+      unwrap(
+        await coreApi.PUT('/organizer/events/{eventId}/waiting-room', {
+          params: { path: { eventId } },
+          body: { admitPerSecond: admitPerSecond ?? undefined },
+        }),
+      ) as OrganizerEvent,
+    onSuccess: () => {
+      invalidateEvent(queryClient, eventId)
+      queryClient.invalidateQueries({ queryKey: keys.waitingRoom(eventId) })
+    },
+  })
+}
+
+/** Số người đang chờ và đã được vào (vé vào cửa còn hạn), làm mới mỗi 5 giây khi đang mở. */
+export function useWaitingRoomStats(eventId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: keys.waitingRoom(eventId),
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await coreApi.GET('/organizer/events/{eventId}/waiting-room', { params: { path: { eventId } }, signal }),
+      ) as WaitingRoomStats,
+    enabled,
+    refetchInterval: 5_000,
   })
 }
 

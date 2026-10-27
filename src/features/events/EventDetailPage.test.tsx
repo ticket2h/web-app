@@ -1,6 +1,6 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { json, mockApi, renderApp } from '../../test/render'
 import { signIn } from '../../test/session'
@@ -26,9 +26,9 @@ const event = {
 }
 
 const seats = [
-  { seatId: 's1', ticketTypeId: 'vip', section: 'VIP', row: 'A', number: 1, status: 'AVAILABLE' },
-  { seatId: 's2', ticketTypeId: 'vip', section: 'VIP', row: 'A', number: 2, status: 'AVAILABLE' },
-  { seatId: 's3', ticketTypeId: 'vip', section: 'VIP', row: 'A', number: 3, status: 'SOLD' },
+  { seatId: 's1', ticketTypeId: 'vip', section: 'VIP', row: 'A', number: 1, status: 'AVAILABLE', version: 0 },
+  { seatId: 's2', ticketTypeId: 'vip', section: 'VIP', row: 'A', number: 2, status: 'AVAILABLE', version: 0 },
+  { seatId: 's3', ticketTypeId: 'vip', section: 'VIP', row: 'A', number: 3, status: 'SOLD', version: 1 },
 ]
 
 function api(orders: (request: Request) => Response | Promise<Response>) {
@@ -108,5 +108,146 @@ describe('EventDetailPage', () => {
     renderApp(`/events/${EVENT_ID}`)
     const aside = (await screen.findByText('Vé đã chọn')).closest('div[data-slot=card]') as HTMLElement
     expect(within(aside).getByText('Chỉ tài khoản khách hàng mới đặt được vé')).toBeInTheDocument()
+  })
+})
+
+/** EventSource giả: test tự phát event như BE gửi qua SSE. */
+class FakeEventSource {
+  static instances: FakeEventSource[] = []
+  onerror: (() => void) | null = null
+  private readonly listeners = new Map<string, ((event: MessageEvent<string>) => void)[]>()
+
+  constructor(readonly url: string) {
+    FakeEventSource.instances.push(this)
+  }
+
+  addEventListener(name: string, listener: (event: MessageEvent<string>) => void) {
+    this.listeners.set(name, [...(this.listeners.get(name) ?? []), listener])
+  }
+
+  emit(name: string, data: unknown) {
+    const event = new MessageEvent(name, { data: JSON.stringify(data) })
+    act(() => this.listeners.get(name)?.forEach((listener) => listener(event)))
+  }
+
+  close() {}
+}
+
+describe('EventDetailPage: sơ đồ ghế trực tiếp', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    FakeEventSource.instances = []
+  })
+
+  it('greys out a seat as soon as someone else holds it, and ignores stale changes', async () => {
+    vi.stubGlobal('EventSource', FakeEventSource)
+    api(() => json({}, 500))
+    renderApp(`/events/${EVENT_ID}`)
+    const seat1 = await screen.findByRole('button', { name: /Ghế 1,/ })
+    expect(seat1).toBeEnabled()
+    const stream = FakeEventSource.instances[0]!
+    expect(stream.url).toBe(`/api/core/events/${EVENT_ID}/seats/stream`)
+
+    stream.emit('hello', { seq: 0 })
+    stream.emit('seats', { seq: 1, changes: [{ seatId: 's1', section: 'VIP', status: 'HELD', version: 2 }] })
+
+    // TanStack Query báo thay đổi cho component ở lượt sau của event loop
+    await waitFor(() => expect(screen.getByRole('button', { name: /Ghế 1,/ })).toBeDisabled())
+    stream.emit('seats', { seq: 2, changes: [{ seatId: 's1', section: 'VIP', status: 'AVAILABLE', version: 1 }] })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.getByRole('button', { name: /Ghế 1,/ })).toBeDisabled()
+  })
+})
+
+describe('EventDetailPage: phòng chờ', () => {
+  const queued = { ...event, waitingRoom: true }
+
+  function queueApi(
+    queue: () => Response,
+    orders: (request: Request) => Response | Promise<Response> = () => json({}, 500),
+  ) {
+    let joins = 0
+    mockApi({
+      [`GET /api/core/events/${EVENT_ID}`]: () => json(queued),
+      [`GET /api/core/events/${EVENT_ID}/seats`]: () => json(seats),
+      [`POST /api/core/events/${EVENT_ID}/waiting-room`]: () => {
+        joins++
+        return queue()
+      },
+      'POST /api/core/orders': orders,
+    })
+    return { joins: () => joins }
+  }
+
+  const waiting = {
+    state: 'WAITING',
+    position: 12,
+    waiting: 40,
+    estimatedWaitSeconds: 6,
+    pollAfterSeconds: 2,
+    admissionToken: null,
+    admissionExpiresAt: null,
+  }
+  const admitted = {
+    state: 'ADMITTED',
+    position: null,
+    waiting: null,
+    estimatedWaitSeconds: 0,
+    pollAfterSeconds: 0,
+    admissionToken: 'v1.tok',
+    admissionExpiresAt: '2099-01-01T00:10:00Z',
+  }
+
+  it('puts customers in the queue and keeps seats locked until their turn', async () => {
+    signIn('CUSTOMER')
+    queueApi(() => json(waiting))
+    renderApp(`/events/${EVENT_ID}`)
+
+    expect(await screen.findByText('12')).toBeInTheDocument()
+    expect(screen.getByText(/Trước bạn còn 11 người/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Ghế 1,/ })).toBeDisabled()
+    const aside = screen.getByText('Vé đã chọn').closest('div[data-slot=card]') as HTMLElement
+    expect(within(aside).getByText(/Đang xếp hàng trong phòng chờ/)).toBeInTheDocument()
+  })
+
+  it('sends the admission token with the order once admitted', async () => {
+    signIn('CUSTOMER')
+    let token: string | null = null
+    queueApi(
+      () => json(admitted),
+      (request) => {
+        token = request.headers.get('Admission-Token')
+        return json({ orderId: ORDER_ID }, 201)
+      },
+    )
+    renderApp(`/events/${EVENT_ID}`)
+
+    expect(await screen.findByText('Đến lượt bạn!')).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: /Ghế 1,/ }))
+    await userEvent.click(screen.getAllByRole('button', { name: 'Giữ chỗ 1 vé' })[0]!)
+
+    await waitFor(() => expect(token).toBe('v1.tok'))
+  })
+
+  it('goes back to the queue when the admission has expired', async () => {
+    signIn('CUSTOMER')
+    const queue = queueApi(
+      () => json(admitted),
+      () => json({ status: 403, code: 'ADMISSION_REQUIRED', detail: 'Vé vào cửa đã hết hạn' }, 403),
+    )
+    renderApp(`/events/${EVENT_ID}`)
+
+    await userEvent.click(await screen.findByRole('button', { name: /Ghế 1,/ }))
+    await userEvent.click(screen.getAllByRole('button', { name: 'Giữ chỗ 1 vé' })[0]!)
+
+    expect(await screen.findByText(/xếp lại vào hàng chờ/)).toBeInTheDocument()
+    await waitFor(() => expect(queue.joins()).toBe(2))
+  })
+
+  it('asks guests to sign in before queuing', async () => {
+    queueApi(() => json(waiting))
+    renderApp(`/events/${EVENT_ID}`)
+
+    expect(await screen.findByRole('link', { name: 'Đăng nhập để xếp hàng' })).toBeInTheDocument()
   })
 })
