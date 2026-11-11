@@ -108,8 +108,11 @@ function EventView({ event }: { event: EventDetail }) {
 
   return (
     <div className="pb-28 lg:pb-12">
-      <Container size="xl" className="pt-8 md:pt-12">
-        <div className="grid gap-8 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-12">
+      {/* Dải đầu trang nhuốm màu son, chấm bi nhạt dần: poster và thông tin chính */}
+      <section className="relative isolate overflow-hidden border-b border-primary/10 bg-primary/[0.06]">
+        <div className="pattern-dots absolute inset-0 -z-10 text-primary/25" aria-hidden />
+        <Container size="xl" className="py-8 md:py-12">
+        <div className="grid gap-8 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center md:gap-14">
           <PosterArt
             seed={event.id}
             title={event.title}
@@ -117,20 +120,25 @@ function EventView({ event }: { event: EventDetail }) {
             timeZone={event.timeZone}
             city={event.venue.city}
             variant="hero"
-            className="aspect-[4/5] rounded-2xl shadow-[0_30px_60px_-30px] shadow-foreground/40"
+            className="aspect-[4/5] rounded-xl shadow-[0_32px_64px_-36px_rgb(120_40_16/0.6)]"
           />
           <div className="flex flex-col justify-center">
             <SaleLine sale={sale} timeZone={event.timeZone} />
-            <Heading as="h1" weight="bold" className="mt-3 text-4xl leading-[1.05] md:text-5xl">
+            <Heading as="h1" weight="bold" className="mt-4 text-4xl leading-[1.05] md:text-5xl">
               {event.title}
             </Heading>
-            <dl className="mt-8 grid gap-4 text-sm">
+            {event.description && (
+              <Text className="mt-4 max-w-prose whitespace-pre-line leading-relaxed text-foreground/80">
+                {event.description}
+              </Text>
+            )}
+            <dl className="mt-8 grid gap-3 text-sm sm:grid-cols-2">
               <InfoRow icon={<CalendarDays />} label="Thời gian">
                 {formatEventTime(event.startsAt, event.timeZone)}
               </InfoRow>
               <InfoRow icon={<MapPin />} label="Địa điểm">
                 <span className="font-medium">{event.venue.name}</span>
-                <span className="block text-muted-foreground">
+                <span className="block font-normal text-muted-foreground">
                   {event.venue.address}, {event.venue.city}
                 </span>
               </InfoRow>
@@ -141,17 +149,12 @@ function EventView({ event }: { event: EventDetail }) {
                 Tối đa {event.maxTicketsPerUser} vé mỗi tài khoản
               </InfoRow>
             </dl>
-            {event.description && (
-              <Text className="mt-8 max-w-prose whitespace-pre-line leading-relaxed text-foreground/85">
-                {event.description}
-              </Text>
-            )}
           </div>
         </div>
-      </Container>
+        </Container>
+      </section>
 
-      <Container size="xl" className="mt-14">
-        <Separator className="mb-10" />
+      <Container size="xl" className="mt-10">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="flex min-w-0 flex-col gap-10">
             {queueOpen && (!session || isCustomer) && (
@@ -174,7 +177,7 @@ function EventView({ event }: { event: EventDetail }) {
                   <QueryError title="Không tải được sơ đồ ghế" error={seats.error} onRetry={() => seats.refetch()} />
                 )}
                 {seats.data && (
-                  <Card padding="lg" className="bg-card/60">
+                  <Card padding="lg">
                     <SeatMap
                       seats={seats.data}
                       ticketTypes={event.ticketTypes}
@@ -344,9 +347,9 @@ function OrderSummary({
 
   return (
     <>
-      <Card padding="lg" className="border-foreground/15">
+      <Card padding="lg" className="shadow-[0_16px_40px_-28px_rgb(0_0_0/0.35)]">
         <CardHeader>
-          <CardTitle className="font-display text-xl">Vé đã chọn</CardTitle>
+          <CardTitle className="text-xl">Vé đã chọn</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {lines.length === 0 ? (
@@ -381,7 +384,7 @@ function OrderSummary({
             <Text size="sm" tone="muted">
               Tổng cộng
             </Text>
-            <span className="font-display text-2xl font-bold tabular-nums">{formatVnd(total)}</span>
+            <span className="text-2xl font-bold tabular-nums">{formatVnd(total)}</span>
           </div>
           {notice && (
             <Alert tone="warning" variant="soft">
@@ -412,7 +415,7 @@ function OrderSummary({
             <Text size="xs" tone="muted">
               {count} vé
             </Text>
-            <div className="font-display text-lg font-bold tabular-nums">{formatVnd(total)}</div>
+            <div className="text-lg font-bold tabular-nums">{formatVnd(total)}</div>
           </div>
           <div className="flex-1">{action}</div>
         </div>
@@ -430,34 +433,35 @@ function SaleLine({ sale, timeZone }: { sale: SaleStatus; timeZone: string }) {
   switch (sale.kind) {
     case 'onSale':
       return (
-        <Badge tone="success" dot className="self-start">
+        <Badge tone="success" dot shape="rounded" className="self-start">
           Đang mở bán · đóng lúc {formatEventTime(sale.closesAt.toISOString(), timeZone)}
         </Badge>
       )
     case 'upcoming':
       return (
-        <Badge tone="info" className="self-start">
+        <Badge tone="info" dot shape="rounded" className="self-start">
           Mở bán {formatEventTime(sale.opensAt.toISOString(), timeZone)}
         </Badge>
       )
     case 'closed':
       return (
-        <Badge tone="neutral" className="self-start">
+        <Badge tone="neutral" dot shape="rounded" className="self-start">
           Đã đóng bán
         </Badge>
       )
   }
 }
 
+/** Ô thông tin trên dải đầu trang: biểu tượng, nhãn nhỏ, giá trị. */
 function InfoRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[2.25rem_1fr] items-start gap-3">
-      <span className="grid size-9 place-items-center rounded-lg bg-secondary text-foreground/80 [&_svg]:size-4" aria-hidden>
+    <div className="flex items-start gap-3 rounded-lg border bg-card p-4">
+      <span className="grid size-10 shrink-0 place-items-center rounded-md bg-secondary text-foreground/80 [&_svg]:size-4" aria-hidden>
         {icon}
       </span>
-      <div>
-        <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</dt>
-        <dd className="mt-0.5">{children}</dd>
+      <div className="min-w-0">
+        <dt className="text-xs font-semibold text-muted-foreground">{label}</dt>
+        <dd className="mt-0.5 font-semibold">{children}</dd>
       </div>
     </div>
   )
@@ -467,7 +471,7 @@ function EventDetailSkeleton() {
   return (
     <Container size="xl" className="py-12">
       <div className="grid gap-12 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <Skeleton className="aspect-[4/5] rounded-2xl" />
+        <Skeleton className="aspect-[4/5] rounded-xl" />
         <div className="flex flex-col gap-4 pt-10">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-12 w-full" />

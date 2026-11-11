@@ -26,7 +26,7 @@ export const EVENT_STATUS: Record<EventStatus, { label: string; tone: Tone }> = 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   const { label, tone } = ORDER_STATUS[status]
   return (
-    <Badge tone={tone} dot>
+    <Badge tone={tone} dot shape="rounded">
       {label}
     </Badge>
   )
@@ -35,7 +35,7 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 export function TicketStatusBadge({ status }: { status: TicketStatus }) {
   const { label, tone } = TICKET_STATUS[status]
   return (
-    <Badge tone={tone} dot>
+    <Badge tone={tone} dot shape="rounded">
       {label}
     </Badge>
   )
@@ -44,7 +44,7 @@ export function TicketStatusBadge({ status }: { status: TicketStatus }) {
 export function EventStatusBadge({ status }: { status: EventStatus }) {
   const { label, tone } = EVENT_STATUS[status]
   return (
-    <Badge tone={tone} dot>
+    <Badge tone={tone} dot shape="rounded">
       {label}
     </Badge>
   )

@@ -32,6 +32,7 @@ import { formatVnd } from '../../shared/format/money'
 import { formatEventTime } from '../../shared/format/time'
 import { EmptyState } from '../../shared/ui/EmptyState'
 import { PageHeader } from '../../shared/ui/PageHeader'
+import { PosterArt } from '../../shared/ui/PosterArt'
 import { QueryError } from '../../shared/ui/QueryError'
 import { EventStatusBadge } from '../../shared/ui/status'
 import { useEvent, useSeats } from '../events/api'
@@ -82,7 +83,18 @@ function EventManager({ detail }: { detail: OrganizerEventDetail }) {
 
   return (
     <>
+      {/* Poster nhỏ cạnh tên sự kiện: cùng màu với trang bán vé để ban tổ chức nhận ra ngay */}
+      <div className="mb-8 flex items-start gap-5">
+        <PosterArt
+          seed={event.id}
+          title={event.title}
+          startsAt={event.startsAt}
+          timeZone={event.timeZone}
+          variant="mini"
+          className="hidden size-20 shrink-0 rounded-lg sm:grid"
+        />
       <PageHeader
+        className="mb-0 min-w-0 flex-1"
         eyebrow="Ban tổ chức"
         title={event.title}
         description={
@@ -104,6 +116,7 @@ function EventManager({ detail }: { detail: OrganizerEventDetail }) {
           )
         }
       />
+      </div>
       <Tabs value={tab} onValueChange={(value) => setParams(value === 'tickets' ? {} : { tab: value as Tab })}>
         <TabsList className="max-w-full overflow-x-auto">
           <TabsTrigger value="tickets">Vé và ghế</TabsTrigger>

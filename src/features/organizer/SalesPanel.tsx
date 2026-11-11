@@ -115,13 +115,13 @@ function Totals({ report }: { report: SalesReport }) {
   const { totals } = report
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      <Card padding="lg" className="min-w-0">
+      <Card padding="lg" className="min-w-0 border-primary bg-primary text-primary-foreground">
         <CardContent className="flex flex-col gap-1">
-          <Text size="sm" tone="muted">
+          <Text size="sm" className="text-primary-foreground">
             Doanh thu
           </Text>
           {/* Doanh thu hàng trăm tỷ dài tới 17 ký tự: chữ co theo bề ngang để không tràn thẻ trên điện thoại */}
-          <span className="font-display text-[clamp(1.5rem,7vw,2.25rem)] font-bold leading-tight whitespace-nowrap">
+          <span className="text-[clamp(1.5rem,7vw,2.25rem)] font-bold leading-tight tracking-tight whitespace-nowrap">
             {formatVnd(totals.revenue)}
           </span>
         </CardContent>
@@ -139,7 +139,7 @@ function Stat({ label, value }: { label: string; value: number }) {
         <Text size="sm" tone="muted">
           {label}
         </Text>
-        <span className="font-display text-[clamp(1.5rem,7vw,2.25rem)] font-bold leading-tight">
+        <span className="text-[clamp(1.5rem,7vw,2.25rem)] font-bold leading-tight tracking-tight">
           {value.toLocaleString('vi-VN')}
         </span>
       </CardContent>

@@ -5,12 +5,15 @@ import type { Seat, TicketTypeView } from '../../shared/api/types'
 import { formatVnd } from '../../shared/format/money'
 import { groupSeats, seatLabel } from './checkout'
 
-/** Màu ghế theo loại vé (thứ tự loại vé của sự kiện). Viết nguyên văn để Tailwind sinh class. */
+/**
+ * Màu ghế theo loại vé (thứ tự loại vé của sự kiện): nền nhạt, viền và số ghế cùng tông, số ghế đủ 4.5:1 trên nền.
+ * Màu son để dành cho ghế đang chọn. Viết nguyên văn để Tailwind sinh class.
+ */
 const TYPE_STYLES = [
-  { seat: 'border-poster-ultramarine/70 bg-poster-ultramarine/12 text-poster-ultramarine dark:text-poster-lilac dark:border-poster-lilac/60 dark:bg-poster-lilac/10', swatch: 'bg-poster-ultramarine dark:bg-poster-lilac' },
-  { seat: 'border-poster-teal/70 bg-poster-teal/12 text-poster-teal dark:border-poster-teal dark:bg-poster-teal/20 dark:text-poster-paper', swatch: 'bg-poster-teal' },
-  { seat: 'border-poster-ochre bg-poster-ochre/25 text-poster-ink dark:bg-poster-ochre/20 dark:text-poster-ochre', swatch: 'bg-poster-ochre' },
-  { seat: 'border-poster-lilac bg-poster-lilac/25 text-poster-ink dark:bg-poster-lilac/15 dark:text-poster-lilac', swatch: 'bg-poster-lilac' },
+  { seat: 'border-seat-indigo-line bg-seat-indigo-soft text-seat-indigo dark:border-seat-indigo-line/50 dark:bg-seat-indigo-line/15 dark:text-seat-indigo-soft', swatch: 'border-seat-indigo-line bg-seat-indigo-soft' },
+  { seat: 'border-input bg-card text-foreground/80', swatch: 'border-input bg-card' },
+  { seat: 'border-poster-sand-2 bg-poster-sand text-poster-umber dark:border-poster-sand-2/50 dark:bg-poster-sand/15 dark:text-poster-sand', swatch: 'border-poster-sand-2 bg-poster-sand' },
+  { seat: 'border-poster-teal-2/60 bg-poster-sage text-poster-teal dark:border-poster-sage/50 dark:bg-poster-sage/15 dark:text-poster-sage', swatch: 'border-poster-teal-2/60 bg-poster-sage' },
 ] as const
 
 interface SeatMapProps {
@@ -37,7 +40,7 @@ export function SeatMap({ seats, ticketTypes, selected, onToggle, limitReached, 
       <div className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
         {seatedTypes.map((type) => (
           <span key={type.id} className="flex items-center gap-2">
-            <span className={cn('size-3.5 rounded-sm', TYPE_STYLES[typeIndex.get(type.id) ?? 0]!.swatch)} />
+            <span className={cn('size-3.5 rounded-sm border', TYPE_STYLES[typeIndex.get(type.id) ?? 0]!.swatch)} />
             {type.name} · {formatVnd(type.price)}
           </span>
         ))}
@@ -47,14 +50,14 @@ export function SeatMap({ seats, ticketTypes, selected, onToggle, limitReached, 
           </span>
         )}
         <span className="flex items-center gap-2">
-          <span className="seat-taken size-3.5 rounded-sm bg-muted text-muted-foreground/50" /> Đã có người
+          <span className="seat-taken size-3.5 rounded-sm bg-muted text-muted-foreground/30" /> Đã có người
         </span>
       </div>
 
       <div className="overflow-x-auto pb-2">
         <div className="mx-auto w-max min-w-full">
           <div className="mx-auto mb-8 max-w-md">
-            <div className="h-2 rounded-t-full bg-foreground/80" />
+            <div className="h-1.5 rounded-sm bg-foreground/85" />
             <Text size="xs" weight="semibold" align="center" tone="muted" className="mt-2 tracking-[0.4em]">
               SÂN KHẤU
             </Text>
@@ -88,12 +91,12 @@ export function SeatMap({ seats, ticketTypes, selected, onToggle, limitReached, 
                               }`}
                               onClick={() => onToggle(seat)}
                               className={cn(
-                                'grid size-7 place-items-center rounded-t-lg rounded-b-sm border font-mono text-[0.65rem] font-semibold transition-colors sm:size-8',
+                                'grid size-8 place-items-center rounded-t-md rounded-b-sm border text-[0.7rem] font-semibold tabular-nums transition sm:size-10 sm:text-xs',
                                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                                 isSelected && 'border-primary bg-primary text-primary-foreground',
                                 !isSelected && available && style.seat,
-                                !isSelected && available && !blocked && 'hover:border-primary hover:bg-primary/15',
-                                !available && 'seat-taken cursor-not-allowed border-transparent bg-muted text-muted-foreground/40',
+                                !isSelected && available && !blocked && 'hover:-translate-y-px hover:border-primary hover:bg-primary/10',
+                                !available && 'seat-taken cursor-not-allowed border-transparent bg-muted text-muted-foreground/25',
                                 available && blocked && !isSelected && !readOnly && 'cursor-not-allowed opacity-45',
                                 readOnly && 'cursor-default',
                               )}

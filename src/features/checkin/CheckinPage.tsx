@@ -94,7 +94,7 @@ export function CheckinPage() {
             />
           </FormField>
 
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-poster-ink text-poster-paper">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-poster-ink text-poster-paper">
             {cameraOn && scanSupported ? (
               <>
                 <video ref={scanner.videoRef} className="size-full object-cover" muted playsInline />
@@ -246,7 +246,7 @@ function ResultPanel({ record }: { record: ScanRecord }) {
 
 function IdlePanel() {
   return (
-    <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed p-8 text-center">
+    <div className="grid min-h-64 place-items-center rounded-xl border border-dashed p-8 text-center">
       <div>
         <ScanLine className="mx-auto size-10 text-muted-foreground" aria-hidden />
         <Text weight="semibold" className="mt-3">

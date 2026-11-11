@@ -2,6 +2,7 @@ import { LogOut, Moon, ReceiptText, Sun, Ticket, UserRound } from 'lucide-react'
 import {
   Badge,
   Button,
+  Container,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -34,13 +35,13 @@ export function RootLayout() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
+      {/* Thanh điều hướng luôn màu than (class `dark` đổi token cho riêng phần này), cả ở chế độ sáng */}
       <Navbar
+        variant="solid"
+        className="dark text-foreground"
         brand={
-          <Link to="/" className="flex items-center gap-2 font-display text-lg font-extrabold tracking-tight">
-            <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
-              <Ticket className="size-4" aria-hidden />
-            </span>
-            Ticket2h
+          <Link to="/" className="flex items-center gap-2.5 text-lg font-bold tracking-tight">
+            <Brand />
           </Link>
         }
         links={navLinks(session?.user.role ?? null, location.pathname)}
@@ -57,13 +58,54 @@ export function RootLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <span className="font-display font-bold text-foreground">Ticket2h</span>
-          <span>Dự án học tập: microservice Spring Boot, thanh toán qua cổng giả lập MockPay.</span>
-        </div>
-      </footer>
+      <Footer links={navLinks(session?.user.role ?? null, location.pathname)} />
     </div>
+  )
+}
+
+/** Logo: ô màu son có hình vé, cạnh tên app. */
+function Brand() {
+  return (
+    <>
+      <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">
+        <Ticket className="size-4" aria-hidden />
+      </span>
+      Ticket2h
+    </>
+  )
+}
+
+/** Chân trang màu than như thanh điều hướng: giới thiệu ngắn, các mục điều hướng, ghi chú dự án. */
+function Footer({ links }: { links: { label: string; href: string }[] }) {
+  return (
+    <footer className="dark bg-background text-muted-foreground">
+      <Container size="xl" className="flex flex-col gap-8 py-12 sm:flex-row sm:justify-between">
+        <div className="max-w-sm">
+          <Link to="/" className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-foreground">
+            <Brand />
+          </Link>
+          <p className="mt-3 text-sm leading-relaxed">
+            Chọn ghế, thanh toán và nhận vé QR cho concert, kịch, hài độc thoại và lễ hội.
+          </p>
+        </div>
+        <nav aria-label="Liên kết chân trang">
+          <ul className="flex flex-wrap gap-x-7 text-sm font-medium">
+            {links.map((link) => (
+              <li key={link.href}>
+                <Link to={link.href} className="inline-flex h-11 items-center transition-colors hover:text-foreground">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </Container>
+      <Container size="xl" className="pb-8">
+        <p className="border-t pt-5 text-sm">
+          Dự án học tập: microservice Spring Boot, thanh toán qua cổng giả lập MockPay.
+        </p>
+      </Container>
+    </footer>
   )
 }
 
@@ -122,7 +164,7 @@ function NavbarActions() {
           <DropdownMenuContent align="end" className="min-w-56">
             <DropdownMenuLabel className="flex flex-col gap-1">
               <span className="truncate">{session.user.email}</span>
-              <Badge size="sm" tone="primary" className="self-start">
+              <Badge size="sm" tone="primary" shape="rounded" className="self-start">
                 {ROLE_LABELS[session.user.role]}
               </Badge>
             </DropdownMenuLabel>

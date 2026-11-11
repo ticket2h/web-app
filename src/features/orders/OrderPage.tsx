@@ -1,4 +1,17 @@
-import { ArrowLeft, Check, CircleSlash, CreditCard, Loader, Ticket } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  CircleSlash,
+  Clock,
+  CreditCard,
+  Loader,
+  Mail,
+  MapPin,
+  Ticket,
+  X,
+} from 'lucide-react'
 import {
   Alert,
   AlertDialog,
@@ -46,23 +59,33 @@ export function OrderPage() {
   const paymentReturn = parsePaymentReturn(params.get('payment'))
   const order = useOrder(orderId, paymentReturn === 'success')
 
+  if (order.data) {
+    return <OrderView order={order.data} paymentReturn={paymentReturn} />
+  }
   return (
     <Container size="md" className="py-8 md:py-12">
-      <Button asChild variant="link" tone="neutral" leftIcon={<ArrowLeft className="size-4" />} className="mb-6 px-0">
-        <Link to="/me/orders">Đơn hàng của tôi</Link>
-      </Button>
-      {order.isPending && <Skeleton className="h-96 rounded-2xl" />}
-      {order.isError &&
-        (order.error instanceof ApiError && order.error.code === 'NOT_FOUND' ? (
-          <EmptyState
-            title="Không tìm thấy đơn hàng"
-            description="Đơn không tồn tại hoặc không thuộc tài khoản của bạn."
-          />
-        ) : (
-          <QueryError title="Không tải được đơn hàng" error={order.error} onRetry={() => order.refetch()} />
-        ))}
-      {order.data && <OrderView order={order.data} paymentReturn={paymentReturn} />}
+      <BackLink />
+      <div className="mt-4">
+        {order.isPending && <Skeleton className="h-96 rounded-xl" />}
+        {order.isError &&
+          (order.error instanceof ApiError && order.error.code === 'NOT_FOUND' ? (
+            <EmptyState
+              title="Không tìm thấy đơn hàng"
+              description="Đơn không tồn tại hoặc không thuộc tài khoản của bạn."
+            />
+          ) : (
+            <QueryError title="Không tải được đơn hàng" error={order.error} onRetry={() => order.refetch()} />
+          ))}
+      </div>
     </Container>
+  )
+}
+
+function BackLink() {
+  return (
+    <Button asChild variant="link" tone="neutral" leftIcon={<ArrowLeft className="size-4" />} className="h-11 px-0">
+      <Link to="/me/orders">Đơn hàng của tôi</Link>
+    </Button>
   )
 }
 
@@ -73,49 +96,60 @@ function OrderView({ order, paymentReturn }: { order: Order; paymentReturn: Paym
   const seatsById = useMemo(() => new Map((seats.data ?? []).map((s) => [s.seatId, s])), [seats.data])
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card padding="none" className="overflow-hidden">
-        <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
-          {event.data ? (
-            <PosterArt
-              seed={event.data.id}
-              title={event.data.title}
-              startsAt={event.data.startsAt}
-              timeZone={event.data.timeZone}
-              variant="mini"
-              className="size-20 shrink-0 rounded-xl"
-            />
-          ) : (
-            <Skeleton className="size-20 shrink-0 rounded-xl" />
-          )}
-          <div className="min-w-0 flex-1">
-            <Text size="xs" weight="semibold" tone="muted" className="uppercase tracking-[0.14em]">
-              Mã đơn <span className="font-mono normal-case tracking-normal">{order.orderId.slice(0, 8)}</span>
-            </Text>
-            <Heading as="h1" size="2xl" weight="bold" className="mt-1">
-              {event.data?.title ?? 'Đơn hàng'}
-            </Heading>
-            {event.data && (
-              <Text size="sm" tone="muted" className="mt-1">
-                {formatEventTime(event.data.startsAt, event.data.timeZone)} · {event.data.venue.name}
+    <>
+      {/* Dải đầu trang nhuốm màu son như trang sự kiện: mã đơn, tên sự kiện, trạng thái, tiến trình */}
+      <section className="relative isolate overflow-hidden border-b border-primary/10 bg-primary/[0.06]">
+        <div className="pattern-dots absolute inset-0 -z-10 text-primary/25" aria-hidden />
+        <Container size="xl" className="pb-8 pt-4">
+          <BackLink />
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <Text size="sm" weight="semibold" tone="muted">
+                Mã đơn <span className="font-mono font-medium text-foreground/80">{order.orderId.slice(0, 8)}</span>
               </Text>
-            )}
+              <Heading as="h1" size="3xl" weight="bold" className="mt-1">
+                {event.data?.title ?? 'Đơn hàng'}
+              </Heading>
+              {event.data && (
+                <Text tone="muted" className="mt-1">
+                  {formatEventTime(event.data.startsAt, event.data.timeZone)} · {event.data.venue.name}
+                </Text>
+              )}
+            </div>
+            <OrderStatusBadge status={order.status} />
           </div>
-          <OrderStatusBadge status={order.status} />
+          <Card padding="none" className="mt-6">
+            <Stepper order={order} />
+          </Card>
+        </Container>
+      </section>
+
+      <Container size="xl" className="py-8 md:py-10">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+          <div className="flex min-w-0 flex-col gap-6">
+            <StatusPanel order={order} paymentReturn={paymentReturn} />
+            <OrderDetails order={order} lines={orderLines(order.items, event.data, seatsById)} />
+          </div>
+          <aside aria-label="Sự kiện của đơn" className="flex flex-col gap-6">
+            {event.data ? <EventAside event={event.data} /> : <Skeleton className="h-80 rounded-xl" />}
+            {order.status === 'PENDING_PAYMENT' && <PendingNotes />}
+          </aside>
         </div>
-        <Separator />
-        <Stepper order={order} />
-      </Card>
+      </Container>
+    </>
+  )
+}
 
-      <StatusPanel order={order} paymentReturn={paymentReturn} />
-
+/** Chi tiết vé của đơn: mỗi loại vé một dòng, ghế của nó, tổng tiền. */
+function OrderDetails({ order, lines }: { order: Order; lines: OrderLine[] }) {
+  return (
       <Card padding="lg">
         <CardContent>
           <Heading as="h2" size="lg" className="mb-4">
             Chi tiết vé
           </Heading>
           <ul className="flex flex-col divide-y">
-            {orderLines(order.items, event.data, seatsById).map((line) => (
+            {lines.map((line) => (
               <li key={line.ticketTypeId} className="flex items-start justify-between gap-4 py-3">
                 <div className="min-w-0">
                   <Text weight="medium">
@@ -143,7 +177,7 @@ function OrderView({ order, paymentReturn }: { order: Order; paymentReturn: Paym
           <Separator className="my-4" />
           <div className="flex items-baseline justify-between">
             <Text tone="muted">Tổng cộng</Text>
-            <span className="font-display text-2xl font-bold tabular-nums">{formatVnd(order.totalAmount)}</span>
+            <span className="text-2xl font-bold tabular-nums">{formatVnd(order.totalAmount)}</span>
           </div>
           {order.paidAt && (
             <Text size="sm" tone="muted" className="mt-2 text-right">
@@ -152,7 +186,71 @@ function OrderView({ order, paymentReturn }: { order: Order; paymentReturn: Paym
           )}
         </CardContent>
       </Card>
-    </div>
+  )
+}
+
+/** Thẻ sự kiện bên phải: poster, giờ diễn, địa điểm, link về trang sự kiện. */
+function EventAside({ event }: { event: EventDetail }) {
+  return (
+    <Card padding="none" className="overflow-hidden">
+      <PosterArt
+        variant="hero"
+        seed={event.id}
+        title={event.title}
+        startsAt={event.startsAt}
+        timeZone={event.timeZone}
+        city={event.venue.city}
+        className="h-64"
+      />
+      <CardContent className="flex flex-col gap-2.5 p-5 text-sm">
+        <Text size="xs" weight="semibold" tone="muted">
+          Sự kiện
+        </Text>
+        <p className="flex gap-2.5">
+          <CalendarDays className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+          {formatEventTime(event.startsAt, event.timeZone)}
+        </p>
+        <p className="flex gap-2.5">
+          <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <span>
+            <span className="font-medium">{event.venue.name}</span>
+            <span className="block text-muted-foreground">
+              {event.venue.address}, {event.venue.city}
+            </span>
+          </span>
+        </p>
+        <Button asChild variant="link" rightIcon={<ArrowRight className="size-4" />} className="h-11 self-start px-0">
+          <Link to={`/events/${event.id}`}>Xem trang sự kiện</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+const NOTES = [
+  { icon: <Clock />, text: 'Ghế được giữ 10 phút. Quá hạn, ghế trở lại cho người khác.' },
+  { icon: <Mail />, text: 'Vé QR được gửi qua email ngay khi thanh toán xong.' },
+  { icon: <X />, text: 'Bạn có thể huỷ đơn bất cứ lúc nào trước khi thanh toán.' },
+]
+
+/** Lưu ý khi đơn đang chờ thanh toán. */
+function PendingNotes() {
+  return (
+    <Card padding="md">
+      <CardContent>
+        <Text weight="semibold">Lưu ý</Text>
+        <ul className="mt-3 flex flex-col gap-3 text-sm">
+          {NOTES.map((note) => (
+            <li key={note.text} className="flex gap-3">
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-secondary [&_svg]:size-4" aria-hidden>
+                {note.icon}
+              </span>
+              <span className="pt-1">{note.text}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -286,7 +384,7 @@ function PendingPanel({ order, paymentReturn }: { order: Order; paymentReturn: P
     })
 
   return (
-    <Card padding="lg" className="border-primary/40">
+    <Card padding="lg" className="shadow-[0_16px_40px_-30px_rgb(0_0_0/0.35)]">
       <CardContent className="flex flex-col gap-5">
         {paymentReturn === 'success' && (
           <Alert tone="info" variant="soft" icon={<Spinner size="sm" />} title="Đang chờ MockPay xác nhận thanh toán">
@@ -305,7 +403,7 @@ function PendingPanel({ order, paymentReturn }: { order: Order; paymentReturn: P
             </Text>
             <div
               className={cn(
-                'font-display text-5xl font-bold tabular-nums tracking-tight',
+                'text-6xl font-bold tabular-nums tracking-tight',
                 remaining !== null && remaining < 60_000 && 'text-destructive',
               )}
               role="timer"
@@ -405,7 +503,7 @@ function Panel({
   return (
     <Card padding="lg" className={PANEL_TONES[tone]}>
       <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-background">{icon}</span>
+        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-background">{icon}</span>
         <div className="flex-1">
           <Text weight="semibold">{title}</Text>
           <Text size="sm" tone="muted" className="mt-0.5">

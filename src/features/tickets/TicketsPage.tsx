@@ -32,15 +32,33 @@ export function TicketsPage() {
     combine: (results) => new Map(results.flatMap((r) => (r.data ? [[r.data.id, r.data] as const] : []))),
   })
   const openTicket = all.find((t) => t.ticketId === openTicketId) ?? null
+  const validCount = all.filter((t) => t.status === 'VALID').length
+  const usedCount = all.filter((t) => t.status === 'USED').length
+  const eventCount = new Set(all.map((t) => t.eventId)).size
 
   return (
-    <Container size="lg" className="py-10">
-      <PageHeader
-        eyebrow="Tài khoản"
-        title="Vé của tôi"
-        description="Đưa mã QR cho nhân viên soát vé ở cổng. Vé đã chuyển nhượng cho người khác không còn ở đây."
-      />
+    <>
+      {/* Dải đầu trang nhuốm màu son, chấm bi nhạt dần: tiêu đề và tóm tắt số vé */}
+      <section className="relative isolate overflow-hidden border-b border-primary/10 bg-primary/[0.06]">
+        <div className="pattern-dots absolute inset-0 -z-10 text-primary/25" aria-hidden />
+        <Container size="xl" className="py-10">
+          <PageHeader
+            eyebrow="Tài khoản"
+            title="Vé của tôi"
+            description="Đưa mã QR cho nhân viên soát vé ở cổng. Vé đã chuyển nhượng cho người khác không còn ở đây."
+            className="mb-0"
+          />
+          {tickets.data && all.length > 0 && (
+            <ul aria-label="Tóm tắt" className="mt-6 flex flex-wrap gap-2 text-sm">
+              <SummaryChip value={validCount} label="vé còn hiệu lực" />
+              <SummaryChip value={eventCount} label="sự kiện" />
+              {usedCount > 0 && <SummaryChip value={usedCount} label="vé đã dùng" />}
+            </ul>
+          )}
+        </Container>
+      </section>
 
+      <Container size="xl" className="py-10">
       {orderFilter && (
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <Badge variant="outline" shape="rounded" className="font-mono">
@@ -53,9 +71,9 @@ export function TicketsPage() {
       )}
 
       {tickets.isPending && (
-        <div className="grid gap-4 md:grid-cols-2">
-          {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-36 rounded-2xl" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton key={i} className="h-36 rounded-xl" />
           ))}
         </div>
       )}
@@ -85,7 +103,7 @@ export function TicketsPage() {
           return (
             <section key={group.eventId} aria-labelledby={`event-${group.eventId}`}>
               <EventHeading group={group} event={event} />
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {group.tickets.map((ticket) => (
                   <TicketStub
                     key={ticket.ticketId}
@@ -108,7 +126,17 @@ export function TicketsPage() {
           onOpenChange={(open) => !open && setOpenTicketId(null)}
         />
       )}
-    </Container>
+      </Container>
+    </>
+  )
+}
+
+/** Một ô tóm tắt trên dải đầu trang: con số đậm và nhãn. */
+function SummaryChip({ value, label }: { value: number; label: string }) {
+  return (
+    <li className="inline-flex h-9 items-center gap-1.5 rounded-md border bg-card px-3.5 text-muted-foreground">
+      <span className="font-bold text-foreground tabular-nums">{value}</span> {label}
+    </li>
   )
 }
 
@@ -147,7 +175,7 @@ function EventHeading({ group, event }: { group: EventGroup; event: EventDetail 
         startsAt={group.startsAt}
         timeZone={event?.timeZone ?? FALLBACK_ZONE}
         variant="mini"
-        className="size-16 shrink-0 rounded-xl"
+        className="size-14 shrink-0 rounded-lg"
       />
       <div className="min-w-0">
         <Heading as="h2" size="xl" id={`event-${group.eventId}`} className="truncate">
@@ -174,17 +202,17 @@ function TicketStub({ ticket, timeZone, onOpen }: { ticket: Ticket; timeZone: st
     <article
       data-testid="ticket"
       className={cn(
-        'ticket-notch flex overflow-hidden rounded-2xl border bg-card [--tear:calc(100%-7.5rem)]',
+        'ticket-notch flex overflow-hidden rounded-xl border bg-card shadow-xs [--tear:calc(100%-7.5rem)]',
         !valid && 'opacity-70',
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 p-5">
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
           <div className="min-w-0">
-            <Text size="xs" weight="semibold" tone="muted" className="uppercase tracking-[0.16em]">
+            <Text size="xs" weight="semibold" tone="muted" className="uppercase tracking-[0.12em]">
               {ticket.ticketType}
             </Text>
-            <div className="mt-1 whitespace-nowrap font-display text-2xl font-bold leading-tight">
+            <div className="mt-1 whitespace-nowrap text-2xl font-bold leading-tight">
               {ticket.seat ?? 'Vé đứng'}
             </div>
           </div>
