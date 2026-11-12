@@ -7,7 +7,6 @@ import { Link, useSearchParams } from 'react-router'
 import type { EventDetail, Ticket } from '../../shared/api/types'
 import { formatDateTime, formatEventTime } from '../../shared/format/time'
 import { EmptyState } from '../../shared/ui/EmptyState'
-import { PageHeader } from '../../shared/ui/PageHeader'
 import { PosterArt } from '../../shared/ui/PosterArt'
 import { QueryError } from '../../shared/ui/QueryError'
 import { TicketStatusBadge } from '../../shared/ui/status'
@@ -38,16 +37,15 @@ export function TicketsPage() {
 
   return (
     <>
-      {/* Dải đầu trang nhuốm màu son, chấm bi nhạt dần: tiêu đề và tóm tắt số vé */}
-      <section className="relative isolate overflow-hidden border-b border-primary/10 bg-primary/[0.06]">
-        <div className="pattern-dots absolute inset-0 -z-10 text-primary/25" aria-hidden />
-        <Container size="xl" className="py-10">
-          <PageHeader
-            eyebrow="Tài khoản"
-            title="Vé của tôi"
-            description="Đưa mã QR cho nhân viên soát vé ở cổng. Vé đã chuyển nhượng cho người khác không còn ở đây."
-            className="mb-0"
-          />
+      {/* Khối đầu trang màu chanh: tiêu đề và tóm tắt số vé */}
+      <Container size="xl" className="pt-4">
+        <section className="relative isolate overflow-hidden rounded-3xl bg-brand px-6 py-10 text-brand-foreground md:px-10">
+          <div className="pattern-rings absolute -right-40 -top-40 -z-10 size-[28rem] rounded-full text-black/10" aria-hidden />
+          <p className="text-xs font-bold uppercase tracking-[0.14em]">Tài khoản</p>
+          <h1 className="mt-2 text-5xl font-bold tracking-tighter md:text-6xl">Vé của tôi</h1>
+          <p className="mt-3 max-w-xl font-medium">
+            Đưa mã QR cho nhân viên soát vé ở cổng. Vé đã chuyển nhượng cho người khác không còn ở đây.
+          </p>
           {tickets.data && all.length > 0 && (
             <ul aria-label="Tóm tắt" className="mt-6 flex flex-wrap gap-2 text-sm">
               <SummaryChip value={validCount} label="vé còn hiệu lực" />
@@ -55,8 +53,8 @@ export function TicketsPage() {
               {usedCount > 0 && <SummaryChip value={usedCount} label="vé đã dùng" />}
             </ul>
           )}
-        </Container>
-      </section>
+        </section>
+      </Container>
 
       <Container size="xl" className="py-10">
       {orderFilter && (
@@ -134,8 +132,8 @@ export function TicketsPage() {
 /** Một ô tóm tắt trên dải đầu trang: con số đậm và nhãn. */
 function SummaryChip({ value, label }: { value: number; label: string }) {
   return (
-    <li className="inline-flex h-9 items-center gap-1.5 rounded-md border bg-card px-3.5 text-muted-foreground">
-      <span className="font-bold text-foreground tabular-nums">{value}</span> {label}
+    <li className="inline-flex h-9 items-center gap-1.5 rounded-full bg-black/10 px-4 font-medium">
+      <span className="font-bold tabular-nums">{value}</span> {label}
     </li>
   )
 }
@@ -175,7 +173,7 @@ function EventHeading({ group, event }: { group: EventGroup; event: EventDetail 
         startsAt={group.startsAt}
         timeZone={event?.timeZone ?? FALLBACK_ZONE}
         variant="mini"
-        className="size-14 shrink-0 rounded-lg"
+        className="size-14 shrink-0 -rotate-3 rounded-lg"
       />
       <div className="min-w-0">
         <Heading as="h2" size="xl" id={`event-${group.eventId}`} className="truncate">

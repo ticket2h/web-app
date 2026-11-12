@@ -21,7 +21,7 @@ function createQueryClient() {
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient)
   return (
-    <ThemeProvider defaultTheme="system">
+    <ThemeProvider defaultTheme="dark">
       <LocaleProvider locale="vi-VN" messages={vi}>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>

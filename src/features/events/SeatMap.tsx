@@ -10,10 +10,10 @@ import { groupSeats, seatLabel } from './checkout'
  * Màu son để dành cho ghế đang chọn. Viết nguyên văn để Tailwind sinh class.
  */
 const TYPE_STYLES = [
-  { seat: 'border-seat-indigo-line bg-seat-indigo-soft text-seat-indigo dark:border-seat-indigo-line/50 dark:bg-seat-indigo-line/15 dark:text-seat-indigo-soft', swatch: 'border-seat-indigo-line bg-seat-indigo-soft' },
+  { seat: 'border-poster-violet bg-poster-violet/12 text-[#4b30d9] dark:bg-poster-violet/20 dark:text-[#d9d3ff]', swatch: 'border-poster-violet bg-poster-violet/20' },
   { seat: 'border-input bg-card text-foreground/80', swatch: 'border-input bg-card' },
-  { seat: 'border-poster-sand-2 bg-poster-sand text-poster-umber dark:border-poster-sand-2/50 dark:bg-poster-sand/15 dark:text-poster-sand', swatch: 'border-poster-sand-2 bg-poster-sand' },
-  { seat: 'border-poster-teal-2/60 bg-poster-sage text-poster-teal dark:border-poster-sage/50 dark:bg-poster-sage/15 dark:text-poster-sage', swatch: 'border-poster-teal-2/60 bg-poster-sage' },
+  { seat: 'border-poster-cyan bg-poster-cyan/15 text-[#0b6478] dark:bg-poster-cyan/15 dark:text-poster-cyan', swatch: 'border-poster-cyan bg-poster-cyan/20' },
+  { seat: 'border-poster-amber bg-poster-amber/20 text-[#744a00] dark:bg-poster-amber/15 dark:text-poster-amber', swatch: 'border-poster-amber bg-poster-amber/25' },
 ] as const
 
 interface SeatMapProps {
@@ -57,7 +57,7 @@ export function SeatMap({ seats, ticketTypes, selected, onToggle, limitReached, 
       <div className="overflow-x-auto pb-2">
         <div className="mx-auto w-max min-w-full">
           <div className="mx-auto mb-8 max-w-md">
-            <div className="h-1.5 rounded-sm bg-foreground/85" />
+            <div className="h-2 rounded-full bg-primary shadow-[0_0_28px_2px] shadow-primary/35" />
             <Text size="xs" weight="semibold" align="center" tone="muted" className="mt-2 tracking-[0.4em]">
               SÂN KHẤU
             </Text>
@@ -91,7 +91,7 @@ export function SeatMap({ seats, ticketTypes, selected, onToggle, limitReached, 
                               }`}
                               onClick={() => onToggle(seat)}
                               className={cn(
-                                'grid size-8 place-items-center rounded-t-md rounded-b-sm border text-[0.7rem] font-semibold tabular-nums transition sm:size-10 sm:text-xs',
+                                'grid size-8 place-items-center rounded-t-lg rounded-b-sm border text-[0.7rem] font-semibold tabular-nums transition sm:size-10 sm:text-xs',
                                 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                                 isSelected && 'border-primary bg-primary text-primary-foreground',
                                 !isSelected && available && style.seat,

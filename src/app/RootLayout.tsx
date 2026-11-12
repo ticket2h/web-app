@@ -35,12 +35,11 @@ export function RootLayout() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
-      {/* Thanh điều hướng luôn màu than (class `dark` đổi token cho riêng phần này), cả ở chế độ sáng */}
       <Navbar
         variant="solid"
-        className="dark text-foreground"
+        className="border-transparent"
         brand={
-          <Link to="/" className="flex items-center gap-2.5 text-lg font-bold tracking-tight">
+          <Link to="/" className="flex items-center gap-2.5 font-display text-lg font-bold tracking-tighter">
             <Brand />
           </Link>
         }
@@ -63,33 +62,33 @@ export function RootLayout() {
   )
 }
 
-/** Logo: ô màu son có hình vé, cạnh tên app. */
+/** Logo: ô chanh xoay nghiêng có hình vé, cạnh tên app. */
 function Brand() {
   return (
     <>
-      <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">
-        <Ticket className="size-4" aria-hidden />
+      <span className="grid size-9 -rotate-8 place-items-center rounded-md bg-brand text-brand-foreground">
+        <Ticket className="size-[18px]" strokeWidth={2.2} aria-hidden />
       </span>
       Ticket2h
     </>
   )
 }
 
-/** Chân trang màu than như thanh điều hướng: giới thiệu ngắn, các mục điều hướng, ghi chú dự án. */
+/** Chân trang: giới thiệu ngắn, các mục điều hướng, chữ TICKET2H cỡ lớn chìm vào nền, ghi chú dự án. */
 function Footer({ links }: { links: { label: string; href: string }[] }) {
   return (
-    <footer className="dark bg-background text-muted-foreground">
-      <Container size="xl" className="flex flex-col gap-8 py-12 sm:flex-row sm:justify-between">
+    <footer className="overflow-hidden border-t text-muted-foreground">
+      <Container size="xl" className="flex flex-col gap-8 pt-14 sm:flex-row sm:justify-between">
         <div className="max-w-sm">
-          <Link to="/" className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-foreground">
+          <Link to="/" className="flex items-center gap-2.5 font-display text-lg font-bold tracking-tighter text-foreground">
             <Brand />
           </Link>
-          <p className="mt-3 text-sm leading-relaxed">
+          <p className="mt-4 text-sm leading-relaxed">
             Chọn ghế, thanh toán và nhận vé QR cho concert, kịch, hài độc thoại và lễ hội.
           </p>
         </div>
         <nav aria-label="Liên kết chân trang">
-          <ul className="flex flex-wrap gap-x-7 text-sm font-medium">
+          <ul className="flex flex-wrap gap-x-8 text-sm font-medium">
             {links.map((link) => (
               <li key={link.href}>
                 <Link to={link.href} className="inline-flex h-11 items-center transition-colors hover:text-foreground">
@@ -100,10 +99,14 @@ function Footer({ links }: { links: { label: string; href: string }[] }) {
           </ul>
         </nav>
       </Container>
-      <Container size="xl" className="pb-8">
-        <p className="border-t pt-5 text-sm">
-          Dự án học tập: microservice Spring Boot, thanh toán qua cổng giả lập MockPay.
-        </p>
+      <Container size="xl">
+        <div
+          aria-hidden
+          className="mt-10 select-none whitespace-nowrap font-display text-[clamp(4rem,17vw,15.5rem)] font-extrabold leading-[0.78] tracking-[-0.06em] text-foreground/[0.06]"
+        >
+          TICKET2H
+        </div>
+        <p className="py-6 text-sm">Dự án học tập: microservice Spring Boot, thanh toán qua cổng giả lập MockPay.</p>
       </Container>
     </footer>
   )
@@ -157,7 +160,7 @@ function NavbarActions() {
       {session ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" leftIcon={<UserRound className="size-4" aria-hidden />}>
+            <Button variant="ghost" className="rounded-full" leftIcon={<UserRound className="size-4" aria-hidden />}>
               <span className="max-w-40 truncate">{session.user.fullName}</span>
             </Button>
           </DropdownMenuTrigger>

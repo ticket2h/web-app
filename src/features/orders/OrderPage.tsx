@@ -45,7 +45,7 @@ import { goToExternal } from '../../shared/navigation'
 import { formatCountdown, formatDateTime, formatEventTime } from '../../shared/format/time'
 import { useNow } from '../../shared/hooks/useNow'
 import { EmptyState } from '../../shared/ui/EmptyState'
-import { PosterArt } from '../../shared/ui/PosterArt'
+import { PosterArt, posterPalette, PosterPattern } from '../../shared/ui/PosterArt'
 import { QueryError } from '../../shared/ui/QueryError'
 import { OrderStatusBadge } from '../../shared/ui/status'
 import { useEvent, useSeats } from '../events/api'
@@ -81,9 +81,9 @@ export function OrderPage() {
   )
 }
 
-function BackLink() {
+function BackLink({ className }: { className?: string }) {
   return (
-    <Button asChild variant="link" tone="neutral" leftIcon={<ArrowLeft className="size-4" />} className="h-11 px-0">
+    <Button asChild variant="link" tone="neutral" leftIcon={<ArrowLeft className="size-4" />} className={cn('h-11 px-0', className)}>
       <Link to="/me/orders">Đơn hàng của tôi</Link>
     </Button>
   )
@@ -97,32 +97,37 @@ function OrderView({ order, paymentReturn }: { order: Order; paymentReturn: Paym
 
   return (
     <>
-      {/* Dải đầu trang nhuốm màu son như trang sự kiện: mã đơn, tên sự kiện, trạng thái, tiến trình */}
-      <section className="relative isolate overflow-hidden border-b border-primary/10 bg-primary/[0.06]">
-        <div className="pattern-dots absolute inset-0 -z-10 text-primary/25" aria-hidden />
-        <Container size="xl" className="pb-8 pt-4">
-          <BackLink />
-          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+      {/* Khối đầu trang màu poster của sự kiện, như trang sự kiện: mã đơn, tên sự kiện, trạng thái, tiến trình */}
+      <Container size="xl" className="pt-4">
+        <section
+          className={cn(
+            'relative isolate overflow-hidden rounded-3xl px-6 pb-6 pt-3 md:px-10',
+            event.data ? posterPalette(event.data.id).surface : 'border bg-card',
+          )}
+        >
+          {event.data && <PosterPattern seed={event.data.id} className="scale-150" />}
+          <BackLink className="text-inherit" />
+          <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
-              <Text size="sm" weight="semibold" tone="muted">
-                Mã đơn <span className="font-mono font-medium text-foreground/80">{order.orderId.slice(0, 8)}</span>
-              </Text>
-              <Heading as="h1" size="3xl" weight="bold" className="mt-1">
+              <p className="text-sm font-semibold opacity-80">
+                Mã đơn <span className="font-mono">{order.orderId.slice(0, 8)}</span>
+              </p>
+              <Heading as="h1" size="3xl" weight="bold" className="mt-2 text-4xl uppercase tracking-tighter text-balance md:text-5xl">
                 {event.data?.title ?? 'Đơn hàng'}
               </Heading>
               {event.data && (
-                <Text tone="muted" className="mt-1">
+                <p className="mt-2 font-medium opacity-80">
                   {formatEventTime(event.data.startsAt, event.data.timeZone)} · {event.data.venue.name}
-                </Text>
+                </p>
               )}
             </div>
-            <OrderStatusBadge status={order.status} />
+            <OrderStatusBadge status={order.status} className="border-transparent bg-white text-neutral-900" />
           </div>
           <Card padding="none" className="mt-6">
             <Stepper order={order} />
           </Card>
-        </Container>
-      </section>
+        </section>
+      </Container>
 
       <Container size="xl" className="py-8 md:py-10">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">

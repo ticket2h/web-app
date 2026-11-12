@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Clock, MapPin, SearchX, Ticket, Users } from 'lucide-react'
+import { ArrowDown, ArrowLeft, CalendarDays, Clock, MapPin, SearchX, Users } from 'lucide-react'
 import {
   Alert,
   Badge,
@@ -8,13 +8,14 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  cn,
   Container,
   Heading,
   Separator,
   Skeleton,
   Text,
 } from 'momi-ui'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 
 import { ApiError, errorMessage } from '../../shared/api/problem'
@@ -24,7 +25,7 @@ import { formatVnd } from '../../shared/format/money'
 import { formatEventTime } from '../../shared/format/time'
 import { useNow } from '../../shared/hooks/useNow'
 import { EmptyState } from '../../shared/ui/EmptyState'
-import { PosterArt } from '../../shared/ui/PosterArt'
+import { posterPalette, PosterPattern } from '../../shared/ui/PosterArt'
 import { QueryError } from '../../shared/ui/QueryError'
 import { useCreateOrder, useEvent, useSeats } from './api'
 import {
@@ -94,6 +95,7 @@ function EventView({ event }: { event: EventDetail }) {
   const limitReached = count >= event.maxTicketsPerUser
   const canSelect = sale.kind === 'onSale' && !waitingForTurn
   const minPrice = Math.min(...event.ticketTypes.map((t) => t.price))
+  const palette = posterPalette(event.id)
 
   const toggleSeat = (seat: Seat) =>
     setSelection((current) => ({
@@ -108,53 +110,85 @@ function EventView({ event }: { event: EventDetail }) {
 
   return (
     <div className="pb-28 lg:pb-12">
-      {/* Dải đầu trang nhuốm màu son, chấm bi nhạt dần: poster và thông tin chính */}
-      <section className="relative isolate overflow-hidden border-b border-primary/10 bg-primary/[0.06]">
-        <div className="pattern-dots absolute inset-0 -z-10 text-primary/25" aria-hidden />
-        <Container size="xl" className="py-8 md:py-12">
-        <div className="grid gap-8 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center md:gap-14">
-          <PosterArt
-            seed={event.id}
-            title={event.title}
-            startsAt={event.startsAt}
-            timeZone={event.timeZone}
-            city={event.venue.city}
-            variant="hero"
-            className="aspect-[4/5] rounded-xl shadow-[0_32px_64px_-36px_rgb(120_40_16/0.6)]"
-          />
-          <div className="flex flex-col justify-center">
-            <SaleLine sale={sale} timeZone={event.timeZone} />
-            <Heading as="h1" weight="bold" className="mt-4 text-4xl leading-[1.05] md:text-5xl">
+      {/* Khối đầu trang màu poster: tên sự kiện chữ lớn, giờ và địa điểm, hộp giá vé */}
+      <Container size="xl" className="pt-4">
+        <section
+          className={cn(
+            'relative isolate flex flex-wrap items-end gap-x-12 gap-y-8 overflow-hidden rounded-3xl px-6 pb-10 pt-6 md:px-10',
+            palette.surface,
+          )}
+        >
+          <PosterPattern seed={event.id} className="scale-150" />
+          <div className="min-w-0 flex-[1_1_32rem]">
+            <Link to="/" className="inline-flex h-11 items-center gap-2 text-sm font-semibold hover:underline">
+              <ArrowLeft className="size-4" aria-hidden /> Khám phá
+            </Link>
+            <div className="mt-10">
+              <SaleLine sale={sale} timeZone={event.timeZone} className="border-transparent bg-white text-neutral-900" />
+            </div>
+            <Heading as="h1" weight="bold" className="mt-4 text-5xl uppercase leading-[0.92] tracking-tighter text-balance md:text-7xl">
               {event.title}
             </Heading>
-            {event.description && (
-              <Text className="mt-4 max-w-prose whitespace-pre-line leading-relaxed text-foreground/80">
-                {event.description}
-              </Text>
-            )}
-            <dl className="mt-8 grid gap-3 text-sm sm:grid-cols-2">
-              <InfoRow icon={<CalendarDays />} label="Thời gian">
+            <ul className="mt-7 flex flex-wrap gap-2 text-sm font-semibold">
+              <li className="flex min-h-10 items-center gap-2 rounded-md bg-black/10 px-3.5 py-2">
+                <CalendarDays className="size-4 shrink-0" aria-hidden />
                 {formatEventTime(event.startsAt, event.timeZone)}
-              </InfoRow>
-              <InfoRow icon={<MapPin />} label="Địa điểm">
-                <span className="font-medium">{event.venue.name}</span>
-                <span className="block font-normal text-muted-foreground">
-                  {event.venue.address}, {event.venue.city}
-                </span>
-              </InfoRow>
-              <InfoRow icon={<Ticket />} label="Giá vé">
-                Từ <span className="font-semibold">{formatVnd(minPrice)}</span>
-              </InfoRow>
-              <InfoRow icon={<Users />} label="Giới hạn">
+              </li>
+              <li className="flex min-h-10 items-center gap-2 rounded-md bg-black/10 px-3.5 py-2">
+                <MapPin className="size-4 shrink-0" aria-hidden />
+                {event.venue.name} · {event.venue.city}
+              </li>
+              <li className="flex min-h-10 items-center gap-2 rounded-md bg-black/10 px-3.5 py-2">
+                <Users className="size-4 shrink-0" aria-hidden />
                 Tối đa {event.maxTicketsPerUser} vé mỗi tài khoản
-              </InfoRow>
-            </dl>
+              </li>
+            </ul>
+          </div>
+          {event.ticketTypes.length > 0 && (
+            <div className="w-full rounded-2xl bg-background p-6 text-foreground shadow-[0_30px_60px_-30px_rgb(0_0_0/0.7)] sm:w-80">
+              <Text size="sm" tone="muted">
+                Giá vé từ
+              </Text>
+              <div className="mt-1 font-display text-3xl font-bold tracking-tighter">{formatVnd(minPrice)}</div>
+              <ul className="mt-4 flex flex-col gap-2 border-t pt-4 text-sm">
+                {event.ticketTypes.map((type) => (
+                  <li key={type.id} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{type.name}</span>
+                    <span className="font-semibold tabular-nums">{formatVnd(type.price)}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button asChild fullWidth size="lg" className="mt-5" rightIcon={<ArrowDown className="size-4" />}>
+                <a href="#booking">{hasSeated ? 'Chọn ghế' : 'Chọn vé'}</a>
+              </Button>
+            </div>
+          )}
+        </section>
+
+        <div className="mt-4 flex flex-wrap gap-4">
+          {event.description && (
+            <Card padding="lg" className="min-w-0 flex-[2_1_32rem]">
+              <CardContent>
+                <Text size="xs" weight="bold" tone="muted" className="uppercase tracking-[0.14em]">
+                  Giới thiệu
+                </Text>
+                <Text className="mt-3 max-w-prose whitespace-pre-line text-lg leading-relaxed">{event.description}</Text>
+              </CardContent>
+            </Card>
+          )}
+          <div className="flex min-w-0 flex-[1_1_18rem] flex-col justify-between gap-6 rounded-xl bg-brand p-7 text-brand-foreground">
+            <div className="text-xs font-bold uppercase tracking-[0.14em]">Địa điểm</div>
+            <div>
+              <div className="font-display text-2xl font-bold leading-tight tracking-tight">{event.venue.name}</div>
+              <div className="mt-1.5 text-sm font-medium">
+                {event.venue.address}, {event.venue.city}
+              </div>
+            </div>
           </div>
         </div>
-        </Container>
-      </section>
+      </Container>
 
-      <Container size="xl" className="mt-10">
+      <Container size="xl" className="mt-14 scroll-mt-20" id="booking">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="flex min-w-0 flex-col gap-10">
             {queueOpen && (!session || isCustomer) && (
@@ -166,7 +200,7 @@ function EventView({ event }: { event: EventDetail }) {
 
             {hasSeated && (
               <section aria-labelledby="seat-heading">
-                <Heading as="h2" id="seat-heading" size="xl" className="mb-1">
+                <Heading as="h2" id="seat-heading" size="2xl" className="mb-1">
                   Chọn ghế
                 </Heading>
                 <Text size="sm" tone="muted" className="mb-6">
@@ -193,13 +227,13 @@ function EventView({ event }: { event: EventDetail }) {
 
             {event.ticketTypes.some((t) => t.kind === 'GA') && (
               <section aria-labelledby="ga-heading">
-                <Heading as="h2" id="ga-heading" size="xl" className="mb-1">
+                <Heading as="h2" id="ga-heading" size="2xl" className="mb-1">
                   {hasSeated ? 'Vé đứng' : 'Chọn vé'}
                 </Heading>
                 <Text size="sm" tone="muted" className="mb-6">
                   Vé không ghế, vào cửa theo khu vực.
                 </Text>
-                <div className="flex flex-col divide-y rounded-xl border bg-card">
+                <div className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card">
                   {event.ticketTypes
                     .filter((t) => t.kind === 'GA')
                     .map((type) => {
@@ -349,7 +383,7 @@ function OrderSummary({
     <>
       <Card padding="lg" className="shadow-[0_16px_40px_-28px_rgb(0_0_0/0.35)]">
         <CardHeader>
-          <CardTitle className="text-xl">Vé đã chọn</CardTitle>
+          <CardTitle className="font-display text-xl tracking-tight">Vé đã chọn</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {lines.length === 0 ? (
@@ -384,7 +418,7 @@ function OrderSummary({
             <Text size="sm" tone="muted">
               Tổng cộng
             </Text>
-            <span className="text-2xl font-bold tabular-nums">{formatVnd(total)}</span>
+            <span className="font-display text-2xl font-bold tracking-tight tabular-nums">{formatVnd(total)}</span>
           </div>
           {notice && (
             <Alert tone="warning" variant="soft">
@@ -429,49 +463,34 @@ function isHandled(error: unknown): boolean {
   return error instanceof ApiError && (error.code === 'SEAT_UNAVAILABLE' || error.code === 'ADMISSION_REQUIRED')
 }
 
-function SaleLine({ sale, timeZone }: { sale: SaleStatus; timeZone: string }) {
+function SaleLine({ sale, timeZone, className }: { sale: SaleStatus; timeZone: string; className?: string }) {
   switch (sale.kind) {
     case 'onSale':
       return (
-        <Badge tone="success" dot shape="rounded" className="self-start">
+        <Badge tone="success" dot className={cn('self-start', className)}>
           Đang mở bán · đóng lúc {formatEventTime(sale.closesAt.toISOString(), timeZone)}
         </Badge>
       )
     case 'upcoming':
       return (
-        <Badge tone="info" dot shape="rounded" className="self-start">
+        <Badge tone="info" dot className={cn('self-start', className)}>
           Mở bán {formatEventTime(sale.opensAt.toISOString(), timeZone)}
         </Badge>
       )
     case 'closed':
       return (
-        <Badge tone="neutral" dot shape="rounded" className="self-start">
+        <Badge tone="neutral" dot className={cn('self-start', className)}>
           Đã đóng bán
         </Badge>
       )
   }
 }
 
-/** Ô thông tin trên dải đầu trang: biểu tượng, nhãn nhỏ, giá trị. */
-function InfoRow({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-start gap-3 rounded-lg border bg-card p-4">
-      <span className="grid size-10 shrink-0 place-items-center rounded-md bg-secondary text-foreground/80 [&_svg]:size-4" aria-hidden>
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <dt className="text-xs font-semibold text-muted-foreground">{label}</dt>
-        <dd className="mt-0.5 font-semibold">{children}</dd>
-      </div>
-    </div>
-  )
-}
-
 function EventDetailSkeleton() {
   return (
     <Container size="xl" className="py-12">
       <div className="grid gap-12 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <Skeleton className="aspect-[4/5] rounded-xl" />
+        <Skeleton className="aspect-[4/5] rounded-2xl" />
         <div className="flex flex-col gap-4 pt-10">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-12 w-full" />

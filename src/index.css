@@ -2,104 +2,98 @@
 @import 'momi-ui/tailwind.css'; /* tokens + @source cho class của momi-ui */
 
 /*
- * Giao diện Ticket2h: tối giản, nền xám ấm, thẻ trắng; thanh điều hướng và chân trang màu than; một màu nhấn đỏ son.
- * Một họ chữ Be Vietnam Pro (index.html) cho cả tiêu đề lẫn chữ giao diện. Token đặt trên :root/.dark để menu, toast,
- * dialog (vẽ qua portal) cũng nhận. Thanh điều hướng, chân trang và khối đầu trang chủ gắn class `dark` để luôn dùng bộ
- * màu tối, ở cả chế độ sáng.
+ * Giao diện Ticket2h "Đêm diễn": nền tối là mặc định (ThemeProvider defaultTheme="dark"), chữ tiêu đề lớn Unbounded,
+ * chữ giao diện Be Vietnam Pro (index.html), một màu nhấn chanh (`brand`), poster sự kiện màu rực. Chế độ sáng giữ cùng
+ * bố cục: nền ngà, nút chính màu mực, chanh chỉ làm nền điểm nhấn (luôn đi với chữ mực, không dùng làm màu chữ).
+ * Token đặt trên :root/.dark để menu, toast, dialog (vẽ qua portal) cũng nhận.
  */
 @theme {
   --font-sans:
     'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  --font-display: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Unbounded', 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
+
+  /* Màu nhấn thương hiệu: nền chanh, chữ mực (16:1). Giá trị ở :root/.dark bên dưới */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
 
   /*
-   * Màu poster sự kiện (PosterArt): mỗi sự kiện một màu nền phẳng, một mảng tròn cùng tông (`-2`) và màu chữ đủ
-   * tương phản (paper trên nền đậm, umber trên nền nhạt), chọn theo id.
+   * Màu poster sự kiện (PosterArt): nền phẳng rực, chọn ổn định theo id. Chữ mực trên nền sáng (coral, cyan, amber,
+   * pink, mint), chữ trắng trên nền đậm (violet, blue, ink); cặp nào cũng >= 4.5:1.
    */
-  --color-poster-paper: #fff7f2;
-  --color-poster-umber: #2f2618;
-  --color-poster-coral: #c8441e;
-  --color-poster-coral-2: #d45a33;
+  --color-poster-paper: #f5f5f2;
   --color-poster-ink: #17171c;
-  --color-poster-ink-2: #27272f;
-  --color-poster-sand: #efe3c8;
-  --color-poster-sand-2: #e5d3aa;
-  --color-poster-sage: #cbd9cb;
-  --color-poster-sage-2: #bccebc;
-  --color-poster-slate: #283a75;
-  --color-poster-slate-2: #33488c;
-  --color-poster-plum: #5b2a4e;
-  --color-poster-plum-2: #6a3560;
-  --color-poster-teal: #1f5f5b;
-  --color-poster-teal-2: #28706b;
-  --color-poster-clay: #e7d8cc;
-  --color-poster-clay-2: #dcc6b5;
-
-  /* Màu than của khối đầu trang chủ: trùng --background của .dark để liền với thanh điều hướng */
-  --color-night: #111114;
-
-  /* Ghế theo loại vé (SeatMap): nền nhạt + viền + chữ cùng tông, đủ tương phản 4.5:1 cho số ghế */
-  --color-seat-indigo: #3b45b0;
-  --color-seat-indigo-soft: #eef0fd;
-  --color-seat-indigo-line: #a8b0ee;
+  --color-poster-coral: #ff5a36;
+  --color-poster-violet: #6b4cff;
+  --color-poster-cyan: #22c3e6;
+  --color-poster-blue: #1e3aff;
+  --color-poster-amber: #ffb020;
+  --color-poster-pink: #ff4fa3;
+  --color-poster-mint: #3ce0c8;
 
   /* Cột/thanh của biểu đồ (báo cáo doanh thu): một chuỗi số liệu, một màu. Giá trị ở :root/.dark bên dưới */
   --color-chart: var(--chart);
 }
 
 :root {
-  /* Bo góc: thẻ (rounded-xl) 12px, nút và ô nhập (rounded-md) 6px, nhãn nhỏ (rounded-sm) 4px */
-  --radius: 0.5rem;
+  /* Bo góc: thẻ (rounded-xl) 16px, nút và ô nhập (rounded-md) 10px, nhãn nhỏ (rounded-sm) 8px */
+  --radius: 0.75rem;
 
-  --background: #f2f1ee;
-  --foreground: #0b0b0f;
+  --background: #f5f5f2;
+  --foreground: #0b0b0d;
   --card: #ffffff;
-  --card-foreground: #0b0b0f;
+  --card-foreground: #0b0b0d;
   --popover: #ffffff;
-  --popover-foreground: #0b0b0f;
+  --popover-foreground: #0b0b0d;
 
-  /* Trắng trên đỏ son 4.7:1 (nút chính) */
-  --primary: #d23f1c;
+  /* Chế độ sáng: nút chính màu mực (chanh trên nền sáng gần như không thấy viền) */
+  --primary: #0b0b0d;
   --primary-foreground: #ffffff;
-  --secondary: #ebe9e4;
-  --secondary-foreground: #0b0b0f;
-  --muted: #ecebe6;
-  /* Chữ phụ: 5.3:1 trên nền trang, 5.7:1 trên thẻ trắng */
-  --muted-foreground: #5f5f69;
-  --accent: #ecebe6;
-  --accent-foreground: #0b0b0f;
+  --secondary: #ecece8;
+  --secondary-foreground: #0b0b0d;
+  --muted: #ecece8;
+  /* Chữ phụ: 6:1 trên nền trang */
+  --muted-foreground: #5c5c66;
+  --accent: #ecece8;
+  --accent-foreground: #0b0b0d;
 
-  --border: #e4e2dc;
-  --input: #d6d3cc;
-  /* Viền focus màu mực, không dùng màu son: màu son dễ nhầm với viền báo lỗi */
-  --ring: #3a3a44;
+  --border: #e3e3de;
+  --input: #d4d4ce;
+  --ring: #0b0b0d;
+
+  --brand: #d7ff3c;
+  --brand-foreground: #0b0b0d;
 
   /* Đã kiểm tra bằng validator của dataviz: đủ tương phản (>= 3:1) với nền card, trong dải độ sáng của chế độ sáng */
   --chart: oklch(0.6 0.2 33);
 }
 
 .dark {
-  --background: #111114;
-  --foreground: #f4f3ef;
-  --card: #1a1a1f;
-  --card-foreground: #f4f3ef;
-  --popover: #1d1d23;
-  --popover-foreground: #f4f3ef;
+  --background: #0b0b0d;
+  --foreground: #f5f5f2;
+  --card: #141418;
+  --card-foreground: #f5f5f2;
+  --popover: #1a1a1f;
+  --popover-foreground: #f5f5f2;
 
-  --primary: oklch(0.7 0.175 38);
-  --primary-foreground: oklch(0.17 0.02 40);
-  --secondary: #26262d;
-  --secondary-foreground: #f4f3ef;
-  --muted: #222228;
+  /* Chế độ tối: nút chính màu chanh, chữ mực */
+  --primary: #d7ff3c;
+  --primary-foreground: #0b0b0d;
+  --secondary: #1c1c22;
+  --secondary-foreground: #f5f5f2;
+  --muted: #1c1c22;
+  /* Chữ phụ: 7.6:1 trên nền trang */
   --muted-foreground: #a3a3ad;
-  --accent: #26262d;
-  --accent-foreground: #f4f3ef;
+  --accent: #1c1c22;
+  --accent-foreground: #f5f5f2;
 
-  --border: oklch(1 0 0 / 9%);
+  --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 14%);
-  --ring: #d6d3cc;
+  --ring: #d7ff3c;
 
-  /* Tối hơn màu primary của chế độ tối một bậc (L 0.66): nằm trong dải độ sáng cho nền tối, vẫn >= 3:1 */
+  --brand: #d7ff3c;
+  --brand-foreground: #0b0b0d;
+
+  /* Tối hơn màu primary cũ của chế độ tối một bậc (L 0.66): nằm trong dải độ sáng cho nền tối, vẫn >= 3:1 */
   --chart: oklch(0.66 0.17 36);
 }
 
@@ -108,31 +102,46 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.035em;
   }
 }
 
 @layer components {
-  /* Mục đang mở trên thanh điều hướng (Navbar của momi-ui chỉ đậm chữ): thêm nền nhẹ cho dễ thấy */
+  /* Thanh điều hướng (Navbar của momi-ui): link dạng viên, mục đang mở có nền nhẹ */
+  [data-slot='navbar'] nav a {
+    border-radius: 9999px;
+    padding-inline: 1rem;
+  }
   [data-slot='navbar'] nav a[aria-current='page'] {
-    background-color: color-mix(in oklab, var(--foreground) 10%, transparent);
+    background-color: color-mix(in oklab, var(--foreground) 9%, transparent);
   }
 
-  /* Lưới kẻ mờ sau khối đầu trang chủ, đậm ở bên phải (cụm poster), nhạt dần về phía chữ. Màu lấy từ currentColor */
-  .pattern-grid {
-    background-image:
-      linear-gradient(currentColor 1px, transparent 1px),
-      linear-gradient(90deg, currentColor 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-position: center top;
-    mask-image: radial-gradient(ellipse 55% 95% at 80% 55%, #000 0%, rgb(0 0 0 / 0.3) 60%, transparent 100%);
+  /* Hoạ tiết in trên poster và khối màu, màu lấy từ currentColor để hợp với mọi màu nền */
+  .pattern-rings {
+    background-image: repeating-radial-gradient(circle, currentColor 0 2px, transparent 2px 22px);
+  }
+  .pattern-stripes {
+    background-image: repeating-linear-gradient(45deg, currentColor 0 2px, transparent 2px 12px);
+  }
+  .pattern-bands {
+    background-image: repeating-linear-gradient(180deg, currentColor 0 2px, transparent 2px 16px);
   }
 
-  /* Chấm bi nhạt dần xuống dưới, cho dải đầu trang màu theo poster (chi tiết sự kiện, đơn hàng, vé) */
+  /* Chấm lưới sau khối đầu trang chủ, đậm ở bên phải (hình vé), nhạt dần về phía chữ */
   .pattern-dots {
-    background-image: radial-gradient(currentColor 1px, transparent 1.4px);
-    background-size: 18px 18px;
-    mask-image: linear-gradient(to bottom, #000, transparent 85%);
+    background-image: radial-gradient(currentColor 1px, transparent 1.3px);
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse 60% 80% at 75% 40%, #000, transparent 75%);
+  }
+
+  /* Dải chữ chạy tên sự kiện: nội dung lặp hai lần, dịch nửa chiều dài để nối liền; tắt khi người dùng giảm chuyển động */
+  .marquee {
+    animation: marquee 48s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee {
+      animation: none;
+    }
   }
 
   /* Cuống vé: hai khuyết tròn ở mép trên/dưới của đường xé */
@@ -152,5 +161,14 @@
       currentColor 0 2px,
       transparent 2px 7px
     );
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }

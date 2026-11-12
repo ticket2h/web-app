@@ -1,4 +1,4 @@
-import { Badge } from 'momi-ui'
+import { Badge, cn } from 'momi-ui'
 
 import type { EventStatus, OrderStatus, TicketStatus } from '../api/types'
 
@@ -23,10 +23,10 @@ export const EVENT_STATUS: Record<EventStatus, { label: string; tone: Tone }> = 
   PUBLISHED: { label: 'Đã công bố', tone: 'success' },
 }
 
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+export function OrderStatusBadge({ status, className }: { status: OrderStatus; className?: string }) {
   const { label, tone } = ORDER_STATUS[status]
   return (
-    <Badge tone={tone} dot shape="rounded">
+    <Badge tone={tone} dot className={cn(className)}>
       {label}
     </Badge>
   )
@@ -35,7 +35,7 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 export function TicketStatusBadge({ status }: { status: TicketStatus }) {
   const { label, tone } = TICKET_STATUS[status]
   return (
-    <Badge tone={tone} dot shape="rounded">
+    <Badge tone={tone} dot>
       {label}
     </Badge>
   )
@@ -44,7 +44,7 @@ export function TicketStatusBadge({ status }: { status: TicketStatus }) {
 export function EventStatusBadge({ status }: { status: EventStatus }) {
   const { label, tone } = EVENT_STATUS[status]
   return (
-    <Badge tone={tone} dot shape="rounded">
+    <Badge tone={tone} dot>
       {label}
     </Badge>
   )

@@ -91,7 +91,7 @@ function EventManager({ detail }: { detail: OrganizerEventDetail }) {
           startsAt={event.startsAt}
           timeZone={event.timeZone}
           variant="mini"
-          className="hidden size-20 shrink-0 rounded-lg sm:grid"
+          className="hidden size-20 shrink-0 -rotate-3 rounded-xl sm:grid"
         />
       <PageHeader
         className="mb-0 min-w-0 flex-1"
