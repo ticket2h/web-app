@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { OrganizerEventDetail } from '../../shared/api/types'
-import { eventFormSchema, formDefaults, fromIso, toEventRequest } from './eventForm'
+import { eventFormSchema, formDefaults, fromIso, toEventRequest } from './eventFormModel'
 import { gridRows, publishChecklist, rowLabels, seatTotal } from './seating'
 
 describe('rowLabels', () => {

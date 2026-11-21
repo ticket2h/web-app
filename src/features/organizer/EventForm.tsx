@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form'
 
 import { errorMessage } from '../../shared/api/problem'
 import type { EventRequest, OrganizerVenue } from '../../shared/api/types'
-import { eventFormSchema, toEventRequest, type EventFormValues } from './eventForm'
+import { eventFormSchema, toEventRequest, type EventFormValues } from './eventFormModel'
 
 interface EventFormProps {
   defaultValues: EventFormValues

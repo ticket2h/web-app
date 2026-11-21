@@ -7,7 +7,7 @@ import { PageHeader } from '../../shared/ui/PageHeader'
 import { QueryError } from '../../shared/ui/QueryError'
 import { useCreateEvent, useVenues } from './api'
 import { EventForm } from './EventForm'
-import { DEFAULT_EVENT_ZONE, formDefaults } from './eventForm'
+import { DEFAULT_EVENT_ZONE, formDefaults } from './eventFormModel'
 import { VenueDialog } from './VenueDialog'
 
 export function NewEventPage() {

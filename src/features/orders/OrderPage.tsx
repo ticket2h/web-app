@@ -392,8 +392,8 @@ function PendingPanel({ order, paymentReturn }: { order: Order; paymentReturn: P
     <Card padding="lg" className="shadow-[0_16px_40px_-30px_rgb(0_0_0/0.35)]">
       <CardContent className="flex flex-col gap-5">
         {paymentReturn === 'success' && (
-          <Alert tone="info" variant="soft" icon={<Spinner size="sm" />} title="Đang chờ MockPay xác nhận thanh toán">
-            Kết quả về qua webhook, thường trong vài giây. Không cần thanh toán lại.
+          <Alert tone="info" variant="soft" icon={<Spinner size="sm" />} title="Đang chờ xác nhận thanh toán">
+            Thường chỉ mất vài giây. Không cần thanh toán lại.
           </Alert>
         )}
         {paymentReturn === 'failed' && (
@@ -465,7 +465,7 @@ function PendingPanel({ order, paymentReturn }: { order: Order; paymentReturn: P
           </Alert>
         )}
         <Text size="xs" tone="muted">
-          Bạn sẽ được chuyển sang trang thanh toán MockPay (cổng thanh toán giả lập), rồi quay lại đây.
+          Bạn sẽ được chuyển sang trang thanh toán giả lập (không trừ tiền thật), rồi quay lại đây.
         </Text>
       </CardContent>
     </Card>

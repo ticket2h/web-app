@@ -78,7 +78,7 @@ describe('OrderPage', () => {
     })
     renderApp(`/payments/return?orderId=${ORDER_ID}&merchantRef=p1&status=SUCCESS`)
 
-    expect(await screen.findByText('Đang chờ MockPay xác nhận thanh toán')).toBeInTheDocument()
+    expect(await screen.findByText('Đang chờ xác nhận thanh toán')).toBeInTheDocument()
     expect(await screen.findByRole('link', { name: 'Xem vé' }, { timeout: 4000 })).toHaveAttribute(
       'href',
       `/me/tickets?order=${ORDER_ID}`,

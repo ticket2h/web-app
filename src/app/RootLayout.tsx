@@ -74,7 +74,7 @@ function Brand() {
   )
 }
 
-/** Chân trang: giới thiệu ngắn, các mục điều hướng, chữ TICKET2H cỡ lớn chìm vào nền, ghi chú dự án. */
+/** Chân trang: giới thiệu ngắn, các mục điều hướng, chữ TICKET2H cỡ lớn chìm vào nền, cảnh báo thanh toán giả lập. */
 function Footer({ links }: { links: { label: string; href: string }[] }) {
   return (
     <footer className="overflow-hidden border-t text-muted-foreground">
@@ -106,7 +106,7 @@ function Footer({ links }: { links: { label: string; href: string }[] }) {
         >
           TICKET2H
         </div>
-        <p className="py-6 text-sm">Dự án học tập: microservice Spring Boot, thanh toán qua cổng giả lập MockPay.</p>
+        <p className="py-6 text-sm">Lưu ý: thanh toán trên Ticket2h hiện là giả lập, không trừ tiền thật.</p>
       </Container>
     </footer>
   )
